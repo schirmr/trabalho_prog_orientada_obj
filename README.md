@@ -1,2 +1,6 @@
 # trabalho_prog_orientada_obj
-Apresentar a proposta inicial do software a ser desenvolvido, demonstrando compreensão do problema, público-alvo e estrutura básica de classes que serão implementadas.
+Trabalho final da disciplina de programação orientada a objetos.
+
+Para rodar o programa terá que ter o python instalado no computador e rodar no terminal o seguinte código:
+
+python ./main.py
