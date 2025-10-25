@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox, filedialog
 import json
 
 from modelos import (
-    Processador, PlacaDeVideo, MemoriaRAM,
+    Processador, PlacaDeVideo, MemoriaRAM, Monitor, MonitorGamer,
     ComputadorOffice, ComputadorGamer, ComputadorIntermediario
 )
 
@@ -11,7 +11,7 @@ class InventarioApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Sistema de Inventário de Computadores")
-        self.geometry("1280x720")
+        self.geometry("800x600")
         
         self.lista_computadores = []
         self.item_selecionado_index = None
@@ -19,9 +19,9 @@ class InventarioApp(tk.Tk):
         self.cpu_hyper_var = tk.BooleanVar(value=False)
 
         self.campos_especificos_map = {
-            'ComputadorOffice': ['SSD SATA(GB)', 'Fonte(W)'],
-            'ComputadorGamer': ['GPU Fabricante', 'GPU Modelo', 'GPU VRAM (GB)', 'Fonte Modular(W)', 'SSD NVMe (GB)'],
-            'ComputadorIntermediario': ['GPU Fabricante', 'GPU Modelo', 'GPU VRAM (GB)', 'SSD NVMe(GB)', 'Fonte(W)']
+            'ComputadorOffice': ['SSD (GB)', 'Fonte (W)', 'Monitor Marca', 'Monitor Modelo', 'Monitor Polegadas (")', 'Monitor Frequência (Hz)'],
+            'ComputadorGamer': ['GPU Fabricante', 'GPU Modelo', 'GPU VRAM (GB)', 'Fonte (W)', 'Monitor Marca', 'Monitor Modelo', 'Monitor Polegadas (")', 'Monitor Frequência (Hz)'],
+            'ComputadorIntermediario': ['GPU Fabricante', 'GPU Modelo', 'GPU VRAM (GB)', 'Fonte (W)', 'Monitor Marca', 'Monitor Modelo', 'Monitor Polegadas (")', 'Monitor Frequência (Hz)']
         }
         self.labels_e_entradas = {}
 
@@ -151,6 +151,40 @@ class InventarioApp(tk.Tk):
         campos_especificos['Fonte (W)'].grid(row=row, column=1, padx=5, pady=5, sticky="ew")
         self.labels_e_entradas['Fonte (W)'] = {'label': lbl_fonte, 'widget': campos_especificos['Fonte (W)']}
         
+        row += 1
+        ttk.Separator(form_frame, orient='horizontal').grid(row=row, column=0, columnspan=6, sticky='ew', pady=10)
+        row += 1
+
+        lbl_mon_marca = ttk.Label(form_frame, text="Monitor Marca:")
+        lbl_mon_marca.grid(row=row, column=0, padx=5, pady=5, sticky="w")
+        entry_mon_marca = ttk.Entry(form_frame)
+        entry_mon_marca.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
+        self.labels_e_entradas['Monitor Marca'] = {'label': lbl_mon_marca, 'widget': entry_mon_marca}
+
+        lbl_mon_modelo = ttk.Label(form_frame, text="Monitor Modelo:")
+        lbl_mon_modelo.grid(row=row, column=2, padx=5, pady=5, sticky="w")
+        entry_mon_modelo = ttk.Entry(form_frame)
+        entry_mon_modelo.grid(row=row, column=3, padx=5, pady=5, sticky="ew")
+        self.labels_e_entradas['Monitor Modelo'] = {'label': lbl_mon_modelo, 'widget': entry_mon_modelo}
+
+        row += 1
+        lbl_mon_pol = ttk.Label(form_frame, text="Monitor Polegadas (\"):")
+        lbl_mon_pol.grid(row=row, column=0, padx=5, pady=5, sticky="w")
+        entry_mon_pol = ttk.Entry(form_frame)
+        entry_mon_pol.grid(row=row, column=1, padx=5, pady=5, sticky="ew")
+        self.labels_e_entradas['Monitor Polegadas (")'] = {'label': lbl_mon_pol, 'widget': entry_mon_pol}
+
+        lbl_mon_hz = ttk.Label(form_frame, text="Monitor Frequência (Hz):")
+        lbl_mon_hz.grid(row=row, column=2, padx=5, pady=5, sticky="w")
+        entry_mon_hz = ttk.Entry(form_frame)
+        entry_mon_hz.grid(row=row, column=3, padx=5, pady=5, sticky="ew")
+        # pré-preencher frequência padrão de 60Hz
+        try:
+            entry_mon_hz.insert(0, '60')
+        except Exception:
+            pass
+        self.labels_e_entradas['Monitor Frequência (Hz)'] = {'label': lbl_mon_hz, 'widget': entry_mon_hz}
+
         self.labels_e_entradas['Tipo']['widget'].bind("<<ComboboxSelected>>", self._atualizar_campos_especificos)
         # Bindings para atualizar campos de CPU quando fabricante ou opção de geração mudar
         self.labels_e_entradas['CPU Fabricante']['widget'].bind("<<ComboboxSelected>>", self._atualizar_campos_cpu)
@@ -334,7 +368,6 @@ class InventarioApp(tk.Tk):
                 self.labels_e_entradas['CPU Hyperthread']['widget'].grid_remove()
 
     def _adicionar_computador(self):
-        """Cria os objetos de componentes e o objeto Computador e o adiciona ao inventário."""
         try:
             tipo = self._get_valor('Tipo')
             
@@ -361,8 +394,17 @@ class InventarioApp(tk.Tk):
             
             if tipo == "ComputadorOffice":
                 ssd = self._get_valor('SSD (GB)', tipo=int)
-                novo_computador = ComputadorOffice(tag, cpu, ram, ssd)
+                # criar monitor simples para Office
+                mon_marca = self._get_valor('Monitor Marca')
+                mon_modelo = self._get_valor('Monitor Modelo', obrigatorio=False) or 'Standard'
+                mon_polegadas = self._get_valor('Monitor Polegadas (")', tipo=float)
+                # leitura da frequência (se o usuário modificou); default 60
+                mon_freq = self._get_valor('Monitor Frequência (Hz)', tipo=int, obrigatorio=False) or 60
+                novo_monitor = Monitor(marca=mon_marca, modelo=mon_modelo, tamanho_polegadas=mon_polegadas, frequencia_hz=mon_freq)
+                novo_computador = ComputadorOffice(tag, cpu, ram, ssd, novo_monitor)
                 
+            # Em _adicionar_computador, SUBSTITUA o bloco "elif tipo == 'ComputadorGamer'" por este:
+
             elif tipo == "ComputadorGamer":
                 gpu = PlacaDeVideo(
                     modelo=self._get_valor('GPU Modelo'),
@@ -370,7 +412,15 @@ class InventarioApp(tk.Tk):
                     fabricante=self._get_valor('GPU Fabricante')
                 )
                 fonte = self._get_valor('Fonte (W)', tipo=int)
-                novo_computador = ComputadorGamer(tag, cpu, ram, gpu, fonte)
+                
+                monitor = MonitorGamer(
+                    marca=self._get_valor('Monitor Marca'),
+                    modelo=self._get_valor('Monitor Modelo'),
+                    tamanho_polegadas=self._get_valor('Monitor Polegadas (")', tipo=float),
+                    frequencia_hz=self._get_valor('Monitor Frequência (Hz)', tipo=int)
+                )
+
+                novo_computador = ComputadorGamer(tag, cpu, ram, gpu, fonte, monitor)
                 
             elif tipo == "ComputadorIntermediario":
                 gpu = PlacaDeVideo(
@@ -378,7 +428,13 @@ class InventarioApp(tk.Tk):
                     memoria_vram=self._get_valor('GPU VRAM (GB)', tipo=int),
                     fabricante=self._get_valor('GPU Fabricante')
                 )
-                novo_computador = ComputadorIntermediario(tag, cpu, ram, gpu)
+                # criar monitor simples para Intermediário
+                mon_marca = self._get_valor('Monitor Marca')
+                mon_modelo = self._get_valor('Monitor Modelo', obrigatorio=False) or 'Standard'
+                mon_polegadas = self._get_valor('Monitor Polegadas (")', tipo=float)
+                mon_freq = self._get_valor('Monitor Frequência (Hz)', tipo=int, obrigatorio=False) or 60
+                novo_monitor = Monitor(marca=mon_marca, modelo=mon_modelo, tamanho_polegadas=mon_polegadas, frequencia_hz=mon_freq)
+                novo_computador = ComputadorIntermediario(tag, cpu, ram, gpu, novo_monitor)
             
             if novo_computador:
                 if self.item_selecionado_index is None:
@@ -396,7 +452,6 @@ class InventarioApp(tk.Tk):
             messagebox.showerror("Erro Inesperado", f"Ocorreu um erro: {e}")
 
     def _atualizar_lista(self):
-        """Atualiza o widget Text com os computadores do inventário."""
         self.lista_widget.config(state=tk.NORMAL)
         self.lista_widget.delete('1.0', tk.END)
         for i, comp in enumerate(self.lista_computadores):
@@ -409,7 +464,6 @@ class InventarioApp(tk.Tk):
         self.item_selecionado_index = None
 
     def _limpar_campos(self):
-        """Limpa todos os campos de entrada."""
         for data in self.labels_e_entradas.values():
             if data['widget']:
                 widget = data['widget']
@@ -442,10 +496,24 @@ class InventarioApp(tk.Tk):
         except Exception:
             pass
 
+        # Garantir que a frequência do monitor volte para 60 após limpar
+        try:
+            if 'Monitor Frequência (Hz)' in self.labels_e_entradas:
+                w = self.labels_e_entradas['Monitor Frequência (Hz)']['widget']
+                try:
+                    w.delete(0, tk.END)
+                except Exception:
+                    pass
+                try:
+                    w.insert(0, '60')
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         self.item_selecionado_index = None
         self.lista_widget.tag_remove("selected", '1.0', tk.END)
         self._atualizar_campos_especificos()
-    # Removido: método _remover_computador conforme solicitação
 
     def _item_selecionado(self, event):
         try:
@@ -500,14 +568,26 @@ class InventarioApp(tk.Tk):
         
         if isinstance(comp, ComputadorOffice):
             self.labels_e_entradas['SSD (GB)']['widget'].insert(0, str(comp.capacidade_ssd_gb))
-        elif isinstance(comp, ComputadorGamer):
             try:
-                self.labels_e_entradas['GPU Fabricante']['widget'].set(comp.placa_de_video.fabricante)
+                self.labels_e_entradas['Monitor Marca']['widget'].insert(0, comp.monitor.marca)
+                self.labels_e_entradas['Monitor Modelo']['widget'].insert(0, comp.monitor.modelo)
+                self.labels_e_entradas['Monitor Polegadas (")']['widget'].insert(0, str(comp.monitor.tamanho_polegadas))
+                self.labels_e_entradas['Monitor Frequência (Hz)']['widget'].insert(0, str(comp.monitor.frequencia_hz))
             except Exception:
                 pass
-            self.labels_e_entradas['GPU Modelo']['widget'].insert(0, str(comp.placa_de_video.modelo))
-            self.labels_e_entradas['GPU VRAM (GB)']['widget'].insert(0, str(comp.placa_de_video.memoria_vram))
-            self.labels_e_entradas['Fonte (W)']['widget'].insert(0, str(comp.potencia_fonte_w))
+        elif isinstance(comp, ComputadorGamer):
+                try:
+                    self.labels_e_entradas['GPU Fabricante']['widget'].set(comp.placa_de_video.fabricante)
+                except Exception:
+                    pass
+                self.labels_e_entradas['GPU Modelo']['widget'].insert(0, str(comp.placa_de_video.modelo))
+                self.labels_e_entradas['GPU VRAM (GB)']['widget'].insert(0, str(comp.placa_de_video.memoria_vram))
+                self.labels_e_entradas['Fonte (W)']['widget'].insert(0, str(comp.potencia_fonte_w))
+                
+                self.labels_e_entradas['Monitor Marca']['widget'].insert(0, comp.monitor.marca)
+                self.labels_e_entradas['Monitor Modelo']['widget'].insert(0, comp.monitor.modelo)
+                self.labels_e_entradas['Monitor Polegadas (")']['widget'].insert(0, str(comp.monitor.tamanho_polegadas))
+                self.labels_e_entradas['Monitor Frequência (Hz)']['widget'].insert(0, str(comp.monitor.frequencia_hz))
         elif isinstance(comp, ComputadorIntermediario):
             try:
                 self.labels_e_entradas['GPU Fabricante']['widget'].set(comp.placa_de_video.fabricante)
@@ -515,11 +595,17 @@ class InventarioApp(tk.Tk):
                 pass
             self.labels_e_entradas['GPU Modelo']['widget'].insert(0, str(comp.placa_de_video.modelo))
             self.labels_e_entradas['GPU VRAM (GB)']['widget'].insert(0, str(comp.placa_de_video.memoria_vram))
+            try:
+                self.labels_e_entradas['Monitor Marca']['widget'].insert(0, comp.monitor.marca)
+                self.labels_e_entradas['Monitor Modelo']['widget'].insert(0, comp.monitor.modelo)
+                self.labels_e_entradas['Monitor Polegadas (")']['widget'].insert(0, str(comp.monitor.tamanho_polegadas))
+                self.labels_e_entradas['Monitor Frequência (Hz)']['widget'].insert(0, str(comp.monitor.frequencia_hz))
+            except Exception:
+                pass
 
         self._atualizar_campos_especificos()
 
     def _atualizar_computador(self):
-        """Atualiza um computador existente com os dados dos campos."""
         if self.item_selecionado_index is None:
             messagebox.showwarning("Aviso", "Nenhum item selecionado para atualizar.")
             return
@@ -557,4 +643,3 @@ class InventarioApp(tk.Tk):
             messagebox.showerror("Erro de Arquivo", f"Não foi possível salvar o arquivo: {e}")
         except Exception as e:
             messagebox.showerror("Erro Inesperado", f"Ocorreu um erro ao salvar: {e}")
-    # Removido: método _carregar_arquivo conforme solicitação

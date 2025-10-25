@@ -1,9 +1,5 @@
 class Processador:
     def __init__(self, modelo, fabricante='AMD', nucleos=None, ultima_geracao=False, perf_cores=0, eff_cores=0, hyperthread=False):
-        """Representa um processador.
-        Para AMD: usa-se 'nucleos' (int).
-        Para INTEL: pode usar 'nucleos' (int) ou, se 'ultima_geracao' for True, usar 'perf_cores' e 'eff_cores'.
-        """
         if not modelo:
             raise ValueError("Processador: Modelo é obrigatório.")
 
@@ -31,7 +27,6 @@ class Processador:
                 raise ValueError("Processador Intel (última geração): é necessário informar núcleos de performance e/ou eficiência.")
             self.nucleos = self.perf_cores + self.eff_cores
         else:
-            # usa-se o campo 'nucleos'
             if nucleos is None:
                 raise ValueError("Processador: número de núcleos é obrigatório quando não se usa o formato E/P.")
             try:
@@ -60,7 +55,6 @@ class Processador:
         return base
     
     def to_dict(self):
-        """Converte o objeto para um dicionário para salvar em JSON."""
         data = {
             'modelo': self.modelo,
             'fabricante': self.fabricante,
@@ -74,8 +68,6 @@ class Processador:
 
 class PlacaDeVideo:
     def __init__(self, modelo, memoria_vram, fabricante='NVIDIA'):
-        # fabricante opcional para compatibilidade com dados antigos; aceita AMD/NVIDIA/INTEL
-        fabricante = (fabricante or '').upper()
         if fabricante not in ('AMD', 'NVIDIA', 'INTEL'):
             raise ValueError("Placa de Vídeo: fabricante deve ser 'AMD', 'NVIDIA' ou 'INTEL'.")
         if not modelo or not memoria_vram > 0:
@@ -102,6 +94,49 @@ class MemoriaRAM:
     
     def to_dict(self):
         return {'capacidade_gb': self.capacidade_gb, 'velocidade_mhz': self.velocidade_mhz}
+
+
+class Monitor:
+    def __init__(self, marca, modelo='Standard', tamanho_polegadas=0, frequencia_hz=60):
+        # modelo agora é opcional; tamanho_polegadas deve ser positivo
+        if not marca or not float(tamanho_polegadas) > 0:
+            raise ValueError("Monitor: Marca e polegadas são obrigatórios e polegadas deve ser maior que zero.")
+
+        self.marca = marca
+        self.modelo = modelo or 'Standard'
+        self.tamanho_polegadas = float(tamanho_polegadas)
+        try:
+            freq = int(frequencia_hz)
+        except Exception:
+            freq = 60
+        if freq <= 0:
+            raise ValueError("Monitor: frequência deve ser um número positivo.")
+        self.frequencia_hz = freq  # Frequência padrão para monitores não-gamer (padrão 60Hz)
+
+    def get_info(self):
+        return f"Monitor: {self.marca} {self.modelo} ({self.tamanho_polegadas}\", {self.frequencia_hz}Hz)"
+
+    def to_dict(self):
+        return {
+            'tipo': self.__class__.__name__,
+            'marca': self.marca,
+            'modelo': self.modelo,
+            'tamanho_polegadas': self.tamanho_polegadas,
+            'frequencia_hz': self.frequencia_hz
+        }
+
+
+class MonitorGamer(Monitor):
+    """Representa um monitor gamer, herdando de Monitor mas exigindo alta frequência."""
+    def __init__(self, marca, modelo, tamanho_polegadas, frequencia_hz):
+        # Chama o construtor da classe pai passando a frequência solicitada
+        super().__init__(marca, modelo, tamanho_polegadas, frequencia_hz)
+
+        # Valida a frequência mínima para gamers
+        if not int(self.frequencia_hz) >= 120:
+            raise ValueError("Monitor Gamer: a frequência deve ser de no mínimo 120Hz.")
+
+
 
 # --- PARTE 2: CLASSES DE COMPUTADOR (HERANÇA E POLIMORFISMO) ---
 
@@ -140,65 +175,75 @@ class Computador:
 
 
 class ComputadorOffice(Computador):
-    """Subclasse 1: Computador de Escritório."""
-    def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM, capacidade_ssd_gb: int):
-        # MUDANÇA AQUI
+    def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM, capacidade_ssd_gb: int, monitor: Monitor):
+        # MUDANÇA AQUI: agora exige-se também um monitor simples para o Office
         super().__init__(tag_identificacao, processador, memoria_ram)
         if not capacidade_ssd_gb > 0:
             raise ValueError("Capacidade do SSD é obrigatória.")
+        if not isinstance(monitor, Monitor):
+            raise ValueError("PC Office deve ter um monitor simples (marca/polegadas).")
         self.capacidade_ssd_gb = int(capacidade_ssd_gb)
+        self.monitor = monitor
 
     def get_info_completa(self):
         info_base = super().get_info_base()
-        return f"[PC de Escritório]\n{info_base}\n  SSD: {self.capacidade_ssd_gb}GB"
+        return f"[PC de Escritório]\n{info_base}\n  SSD: {self.capacidade_ssd_gb}GB\n  {self.monitor.get_info()}"
 
     def to_dict(self):
         data = super().to_dict_base()
         data.update({'capacidade_ssd_gb': self.capacidade_ssd_gb})
+        data.update({'monitor': self.monitor.to_dict()})
         return data
 
 
 class ComputadorGamer(Computador):
-    """Subclasse 2: Computador Gamer."""
-    def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM, placa_de_video: PlacaDeVideo, potencia_fonte_w: int):
-        # MUDANÇA AQUI
+    def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM, 
+                 placa_de_video: PlacaDeVideo, potencia_fonte_w: int, monitor: MonitorGamer):
         super().__init__(tag_identificacao, processador, memoria_ram)
         if not placa_de_video:
             raise ValueError("PC Gamer deve ter uma placa de vídeo dedicada.")
         if not potencia_fonte_w >= 500:
-             raise ValueError("Fonte para PC Gamer deve ser de 500W ou mais.")
+            raise ValueError("Fonte para PC Gamer deve ser de 500W ou mais.")
+        if not isinstance(monitor, MonitorGamer):
+            raise ValueError("PC Gamer deve ter um Monitor Gamer.")
+            
         self.placa_de_video = placa_de_video
         self.potencia_fonte_w = int(potencia_fonte_w)
+        self.monitor = monitor
 
     def get_info_completa(self):
         info_base = super().get_info_base()
-        return f"[PC Gamer]\n{info_base}\n  {self.placa_de_video.get_info()}\n  Fonte: {self.potencia_fonte_w}W"
+        return (f"[PC Gamer]\n{info_base}\n  {self.placa_de_video.get_info()}"
+                f"\n  {self.monitor.get_info()}\n  Fonte: {self.potencia_fonte_w}W")
 
     def to_dict(self):
         data = super().to_dict_base()
         data.update({
             'placa_de_video': self.placa_de_video.to_dict(),
-            'potencia_fonte_w': self.potencia_fonte_w
+            'potencia_fonte_w': self.potencia_fonte_w,
+            'monitor': self.monitor.to_dict()
         })
         return data
 
 
 class ComputadorIntermediario(Computador):
-    """Subclasse 3: Computador Intermediário."""
-    def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM, placa_de_video: PlacaDeVideo):
-        # MUDANÇA AQUI
+    def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM, placa_de_video: PlacaDeVideo, monitor: Monitor):
         super().__init__(tag_identificacao, processador, memoria_ram)
         if not placa_de_video:
             raise ValueError("PC Intermediário deve ter uma placa de vídeo.")
+        if not isinstance(monitor, Monitor):
+            raise ValueError("PC Intermediário deve ter um monitor simples (marca/polegadas).")
         self.placa_de_video = placa_de_video
+        self.monitor = monitor
 
     def get_info_completa(self):
         info_base = super().get_info_base()
-        return f"[PC Intermediário]\n{info_base}\n  {self.placa_de_video.get_info()}"
+        return f"[PC Intermediário]\n{info_base}\n  {self.placa_de_video.get_info()}\n  {self.monitor.get_info()}"
 
     def to_dict(self):
         data = super().to_dict_base()
         data.update({
             'placa_de_video': self.placa_de_video.to_dict()
         })
+        data.update({'monitor': self.monitor.to_dict()})
         return data
