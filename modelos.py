@@ -2,22 +2,15 @@ class Processador:
     def __init__(self, modelo, fabricante='AMD', nucleos=None, ultima_geracao=False, perf_cores=0, eff_cores=0, hyperthread=False):
         if not modelo:
             raise ValueError("Processador: Modelo é obrigatório.")
-
         if fabricante not in ('AMD', 'INTEL'):
             raise ValueError("Processador: Fabricante deve ser 'AMD' ou 'INTEL'.")
-
+        
         self.modelo = modelo
         self.fabricante = fabricante
         self.ultima_geracao = bool(ultima_geracao)
 
-        try:
-            perf = int(perf_cores)
-        except Exception:
-            perf = 0
-        try:
-            eff = int(eff_cores)
-        except Exception:
-            eff = 0
+        perf = int(perf_cores) if perf_cores is not None else 0
+        eff = int(eff_cores) if eff_cores is not None else 0
 
         self.perf_cores = max(0, perf)
         self.eff_cores = max(0, eff)
@@ -29,20 +22,17 @@ class Processador:
         else:
             if nucleos is None:
                 raise ValueError("Processador: número de núcleos é obrigatório quando não se usa o formato E/P.")
-            try:
-                n = int(nucleos)
-            except Exception:
-                raise ValueError("Processador: número de núcleos deve ser inteiro.")
+            n = int(nucleos)
             if n <= 0:
                 raise ValueError("Processador: número de núcleos deve ser maior que zero.")
             self.nucleos = n
         # Hyperthread/SMT: dobra o número de threads lógicas quando ativo
         self.hyperthread = bool(hyperthread)
-        # número lógico de threads (apenas informativo)
-        try:
-            self.threads = int(self.nucleos) * (2 if self.hyperthread else 1)
-        except Exception:
-            self.threads = self.nucleos
+
+        if self.hyperthread:
+            self.threads = int(self.nucleos) * 2
+        else:
+            self.threads = int(self.nucleos)
 
     def get_info(self):
         if self.fabricante == 'INTEL' and self.ultima_geracao:
@@ -70,7 +60,7 @@ class PlacaDeVideo:
     def __init__(self, modelo, memoria_vram, fabricante='NVIDIA'):
         if fabricante not in ('AMD', 'NVIDIA', 'INTEL'):
             raise ValueError("Placa de Vídeo: fabricante deve ser 'AMD', 'NVIDIA' ou 'INTEL'.")
-        if not modelo or not memoria_vram > 0:
+        if not modelo or memoria_vram <= 0:
             raise ValueError("Placa de Vídeo: Modelo e VRAM são obrigatórios.")
         self.modelo = modelo
         self.memoria_vram = int(memoria_vram)
@@ -84,7 +74,7 @@ class PlacaDeVideo:
 
 class MemoriaRAM:
     def __init__(self, capacidade_gb, velocidade_mhz):
-        if not capacidade_gb > 0 or not velocidade_mhz > 0:
+        if capacidade_gb <= 0 or velocidade_mhz <= 0:
             raise ValueError("Memória RAM: Capacidade e velocidade são obrigatórias.")
         self.capacidade_gb = int(capacidade_gb)
         self.velocidade_mhz = int(velocidade_mhz)
@@ -97,21 +87,19 @@ class MemoriaRAM:
 
 
 class Monitor:
-    def __init__(self, marca, modelo='Standard', tamanho_polegadas=0, frequencia_hz=60):
-        # modelo agora é opcional; tamanho_polegadas deve ser positivo
-        if not marca or not float(tamanho_polegadas) > 0:
-            raise ValueError("Monitor: Marca e polegadas são obrigatórios e polegadas deve ser maior que zero.")
+    def __init__(self, marca, modelo='Padrao', tamanho_polegadas=0, frequencia_hz=60):
+        if not marca:
+            raise ValueError("Monitor: Marca é obrigatória")
+        if not float(tamanho_polegadas) > 0:
+            raise ValueError("Monitor: Tamanho em polegadas deve ser maior que zero.")
 
         self.marca = marca
-        self.modelo = modelo or 'Standard'
+        self.modelo = modelo or 'Padrao'
         self.tamanho_polegadas = float(tamanho_polegadas)
-        try:
-            freq = int(frequencia_hz)
-        except Exception:
-            freq = 60
-        if freq <= 0:
-            raise ValueError("Monitor: frequência deve ser um número positivo.")
-        self.frequencia_hz = freq  # Frequência padrão para monitores não-gamer (padrão 60Hz)
+        freq = int(frequencia_hz)
+        if freq < 60:
+            raise ValueError("Monitor: frequência deve ser de pelo menos 60Hz.")
+        self.frequencia_hz = freq
 
     def get_info(self):
         return f"Monitor: {self.marca} {self.modelo} ({self.tamanho_polegadas}\", {self.frequencia_hz}Hz)"
@@ -125,25 +113,17 @@ class Monitor:
             'frequencia_hz': self.frequencia_hz
         }
 
-
 class MonitorGamer(Monitor):
-    """Representa um monitor gamer, herdando de Monitor mas exigindo alta frequência."""
     def __init__(self, marca, modelo, tamanho_polegadas, frequencia_hz):
-        # Chama o construtor da classe pai passando a frequência solicitada
         super().__init__(marca, modelo, tamanho_polegadas, frequencia_hz)
 
-        # Valida a frequência mínima para gamers
         if not int(self.frequencia_hz) >= 120:
             raise ValueError("Monitor Gamer: a frequência deve ser de no mínimo 120Hz.")
-
-
 
 # --- PARTE 2: CLASSES DE COMPUTADOR (HERANÇA E POLIMORFISMO) ---
 
 class Computador:
-    """Superclasse (Classe Pai) que define um computador."""
     def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM):
-        # MUDANÇA AQUI
         if not tag_identificacao:
             raise ValueError("Tag de Identificação é obrigatória.")
         self.tag_identificacao = tag_identificacao
@@ -151,17 +131,12 @@ class Computador:
         self.memoria_ram = memoria_ram
 
     def get_info_base(self):
-        """Retorna as informações comuns a todos os computadores."""
-        # MUDANÇA AQUI
         return f"Tag: {self.tag_identificacao}\n  {self.processador.get_info()}\n  {self.memoria_ram.get_info()}"
 
     def get_info_completa(self):
-        """Método polimórfico a ser sobrescrito pelas classes filhas."""
         return f"[Computador Genérico]\n{self.get_info_base()}"
 
     def to_dict_base(self):
-        """Converte as informações base para um dicionário."""
-        # MUDANÇA AQUI
         return {
             'tipo': self.__class__.__name__,
             'tag_identificacao': self.tag_identificacao,
@@ -170,13 +145,11 @@ class Computador:
         }
 
     def to_dict(self):
-        """Método polimórfico para serialização completa."""
         return self.to_dict_base()
 
 
 class ComputadorOffice(Computador):
     def __init__(self, tag_identificacao, processador: Processador, memoria_ram: MemoriaRAM, capacidade_ssd_gb: int, monitor: Monitor):
-        # MUDANÇA AQUI: agora exige-se também um monitor simples para o Office
         super().__init__(tag_identificacao, processador, memoria_ram)
         if not capacidade_ssd_gb > 0:
             raise ValueError("Capacidade do SSD é obrigatória.")

@@ -89,7 +89,6 @@ class InventarioApp(tk.Tk):
         campos_comuns['CPU Núcleos'].grid(row=row, column=5, padx=5, pady=5, sticky="ew")
         self.labels_e_entradas['CPU Núcleos'] = {'label': lbl_cpu_nucleos, 'widget': campos_comuns['CPU Núcleos']}
 
-        # Campos para Intel última geração (núcleos performance/eficiência)
         lbl_cpu_ultima = ttk.Label(form_frame, text="Intel - Última Geração:")
         lbl_cpu_ultima.grid(row=row+1, column=0, padx=5, pady=5, sticky="w")
         campos_comuns['CPU Última Geração'].grid(row=row+1, column=1, padx=5, pady=5, sticky="w")
@@ -104,12 +103,12 @@ class InventarioApp(tk.Tk):
         lbl_cpu_eff.grid(row=row+1, column=4, padx=5, pady=5, sticky="w")
         campos_comuns['CPU Núcleos Eficiência'].grid(row=row+1, column=5, padx=5, pady=5, sticky="ew")
         self.labels_e_entradas['CPU Núcleos Eficiência'] = {'label': lbl_cpu_eff, 'widget': campos_comuns['CPU Núcleos Eficiência']}
-        # adicionar opção Hyperthread/SMT logo abaixo dos campos de CPU (visível quando não-última geração)
+
         lbl_cpu_hyper = ttk.Label(form_frame, text="Hyperthread/SMT:")
         lbl_cpu_hyper.grid(row=row+2, column=0, padx=5, pady=5, sticky="w")
         campos_comuns['CPU Hyperthread'].grid(row=row+2, column=1, padx=5, pady=5, sticky="w")
         self.labels_e_entradas['CPU Hyperthread'] = {'label': lbl_cpu_hyper, 'widget': campos_comuns['CPU Hyperthread']}
-        # avançar a linha base para os próximos campos
+
         row = row + 3
         lbl_ram_gb = ttk.Label(form_frame, text="RAM (GB):")
         lbl_ram_gb.grid(row=row, column=0, padx=5, pady=5, sticky="w")
@@ -178,7 +177,7 @@ class InventarioApp(tk.Tk):
         lbl_mon_hz.grid(row=row, column=2, padx=5, pady=5, sticky="w")
         entry_mon_hz = ttk.Entry(form_frame)
         entry_mon_hz.grid(row=row, column=3, padx=5, pady=5, sticky="ew")
-        # pré-preencher frequência padrão de 60Hz
+
         try:
             entry_mon_hz.insert(0, '60')
         except Exception:
@@ -186,16 +185,13 @@ class InventarioApp(tk.Tk):
         self.labels_e_entradas['Monitor Frequência (Hz)'] = {'label': lbl_mon_hz, 'widget': entry_mon_hz}
 
         self.labels_e_entradas['Tipo']['widget'].bind("<<ComboboxSelected>>", self._atualizar_campos_especificos)
-        # Bindings para atualizar campos de CPU quando fabricante ou opção de geração mudar
+
         self.labels_e_entradas['CPU Fabricante']['widget'].bind("<<ComboboxSelected>>", self._atualizar_campos_cpu)
-        # Bind para modelo: nada necessário, mas manter referência
-        # variáveis Tkinter: usar trace para reagir a mudanças
+
         try:
             self.cpu_ultima_geracao_var.trace_add('write', lambda *args: self._atualizar_campos_cpu())
         except Exception:
-            # fallback para versões mais antigas
             self.cpu_ultima_geracao_var.trace('w', lambda *args: self._atualizar_campos_cpu())
-        # também reagir a mudanças no fabricante do GPU (não obrigatório)
         
         row += 1
         button_frame = ttk.Frame(form_frame)
@@ -225,30 +221,24 @@ class InventarioApp(tk.Tk):
         list_button_frame = ttk.Frame(main_frame)
         list_button_frame.pack(fill="x", pady=5)
 
-        # Removido: botão 'Remover Selecionado' e 'Carregar de Arquivo' conforme solicitado.
         ttk.Button(list_button_frame, text="Salvar em Arquivo", command=self._salvar_arquivo).pack(side="right", padx=5)
 
         self._atualizar_campos_especificos()
 
     def _get_valor(self, nome_campo, tipo=str, obrigatorio=True):
-        """Função utilitária para ler e validar campos."""
         try:
-            # special-case para checkbox/variáveis que não usam .get()
             if nome_campo == 'CPU Última Geração':
                 return bool(self.cpu_ultima_geracao_var.get())
             if nome_campo == 'CPU Hyperthread':
                 return bool(self.cpu_hyper_var.get())
 
             widget = self.labels_e_entradas[nome_campo]['widget']
-            # Alguns widgets (Checkbutton) não possuem get(); entries/combobox têm
             try:
                 valor = widget.get()
             except Exception:
-                # se não conseguir, tenta ler a var associada
                 valor = None
             
             if not widget.winfo_ismapped() and obrigatorio:
-                # MUDANÇA AQUI
                 campos_comuns = ['Tipo', 'Tag de Identificação', 'CPU Fabricante', 'CPU Modelo', 'CPU Núcleos', 'RAM (GB)', 'RAM (MHz)']
                 if nome_campo in campos_comuns:
                      raise ValueError(f"Campo '{nome_campo}' é obrigatório.")
@@ -270,7 +260,6 @@ class InventarioApp(tk.Tk):
             return None
 
     def _atualizar_campos_especificos(self, event=None):
-        """Mostra/esconde os campos de entrada com base no tipo de computador selecionado."""
         tipo_selecionado = self.labels_e_entradas['Tipo']['widget'].get()
         
         for campos_lista in self.campos_especificos_map.values():
@@ -288,7 +277,6 @@ class InventarioApp(tk.Tk):
         self._atualizar_campos_cpu()
 
     def _atualizar_campos_cpu(self, event=None):
-        """Mostra/esconde campos de CPU conforme fabricante e flag de última geração."""
         try:
             fabricante = self.labels_e_entradas['CPU Fabricante']['widget'].get()
         except Exception:
@@ -326,28 +314,23 @@ class InventarioApp(tk.Tk):
             pass
 
         if fabricante.upper() == 'INTEL' and ultima:
-            # esconder campo único de núcleos
             if 'CPU Núcleos' in self.labels_e_entradas:
                 self.labels_e_entradas['CPU Núcleos']['label'].grid_remove()
                 self.labels_e_entradas['CPU Núcleos']['widget'].grid_remove()
 
-            # mostrar perf/eff
             for key in ('CPU Núcleos Performance', 'CPU Núcleos Eficiência', 'CPU Última Geração'):
                 if key in self.labels_e_entradas:
                     self.labels_e_entradas[key]['label'].grid()
                     self.labels_e_entradas[key]['widget'].grid()
         else:
-            # mostrar campo único de núcleos
             if 'CPU Núcleos' in self.labels_e_entradas:
                 self.labels_e_entradas['CPU Núcleos']['label'].grid()
                 self.labels_e_entradas['CPU Núcleos']['widget'].grid()
 
-            # esconder perf/eff
             for key in ('CPU Núcleos Performance', 'CPU Núcleos Eficiência'):
                 if key in self.labels_e_entradas:
                     self.labels_e_entradas[key]['label'].grid_remove()
                     self.labels_e_entradas[key]['widget'].grid_remove()
-            # mostrar/ocultar checkbox de última geração (se for Intel, mostrar; caso contrário, esconder)
             if fabricante.upper() == 'INTEL':
                 if 'CPU Última Geração' in self.labels_e_entradas:
                     self.labels_e_entradas['CPU Última Geração']['label'].grid()
@@ -357,7 +340,6 @@ class InventarioApp(tk.Tk):
                     self.labels_e_entradas['CPU Última Geração']['label'].grid_remove()
                     self.labels_e_entradas['CPU Última Geração']['widget'].grid_remove()
 
-        # Mostrar/ocultar checkbox Hyperthread: exibir quando NÃO for última geração e fabricante for AMD ou INTEL
         if fabricante.upper() in ('AMD', 'INTEL') and not ultima:
             if 'CPU Hyperthread' in self.labels_e_entradas:
                 self.labels_e_entradas['CPU Hyperthread']['label'].grid()
@@ -371,11 +353,9 @@ class InventarioApp(tk.Tk):
         try:
             tipo = self._get_valor('Tipo')
             
-            # Construção do processador: suporta fabricante e modo Intel última geração (E/P cores)
             cpu_modelo = self._get_valor('CPU Modelo')
             cpu_fabricante = self._get_valor('CPU Fabricante')
             cpu_ultima = bool(self.cpu_ultima_geracao_var.get())
-            # decidir criação do processador conforme fabricante/geração/hyperthread
             if str(cpu_fabricante).upper() == 'INTEL' and cpu_ultima:
                 perf = self._get_valor('CPU Núcleos Performance', tipo=int)
                 eff = self._get_valor('CPU Núcleos Eficiência', tipo=int)
@@ -394,16 +374,12 @@ class InventarioApp(tk.Tk):
             
             if tipo == "ComputadorOffice":
                 ssd = self._get_valor('SSD (GB)', tipo=int)
-                # criar monitor simples para Office
                 mon_marca = self._get_valor('Monitor Marca')
                 mon_modelo = self._get_valor('Monitor Modelo', obrigatorio=False) or 'Standard'
                 mon_polegadas = self._get_valor('Monitor Polegadas (")', tipo=float)
-                # leitura da frequência (se o usuário modificou); default 60
                 mon_freq = self._get_valor('Monitor Frequência (Hz)', tipo=int, obrigatorio=False) or 60
                 novo_monitor = Monitor(marca=mon_marca, modelo=mon_modelo, tamanho_polegadas=mon_polegadas, frequencia_hz=mon_freq)
                 novo_computador = ComputadorOffice(tag, cpu, ram, ssd, novo_monitor)
-                
-            # Em _adicionar_computador, SUBSTITUA o bloco "elif tipo == 'ComputadorGamer'" por este:
 
             elif tipo == "ComputadorGamer":
                 gpu = PlacaDeVideo(
@@ -428,7 +404,6 @@ class InventarioApp(tk.Tk):
                     memoria_vram=self._get_valor('GPU VRAM (GB)', tipo=int),
                     fabricante=self._get_valor('GPU Fabricante')
                 )
-                # criar monitor simples para Intermediário
                 mon_marca = self._get_valor('Monitor Marca')
                 mon_modelo = self._get_valor('Monitor Modelo', obrigatorio=False) or 'Standard'
                 mon_polegadas = self._get_valor('Monitor Polegadas (")', tipo=float)
@@ -471,45 +446,40 @@ class InventarioApp(tk.Tk):
                     widget.delete(0, tk.END)
                 elif isinstance(widget, ttk.Combobox):
                     widget.set('')
-        try:
-            self.labels_e_entradas['CPU Fabricante']['widget'].set('')
-        except Exception:
-            pass
-        try:
-            if 'GPU Fabricante' in self.labels_e_entradas:
-                self.labels_e_entradas['GPU Fabricante']['widget'].set('')
-        except Exception:
-            pass
-        try:
-            self.cpu_ultima_geracao_var.set(False)
-        except Exception:
-            pass
-        try:
-            self.cpu_hyper_var.set(False)
-        except Exception:
-            pass
-        try:
-            if 'CPU Núcleos Performance' in self.labels_e_entradas:
-                self.labels_e_entradas['CPU Núcleos Performance']['widget'].delete(0, tk.END)
-            if 'CPU Núcleos Eficiência' in self.labels_e_entradas:
-                self.labels_e_entradas['CPU Núcleos Eficiência']['widget'].delete(0, tk.END)
-        except Exception:
-            pass
+        if 'CPU Fabricante' in self.labels_e_entradas:
+            w = self.labels_e_entradas['CPU Fabricante']['widget']
+            if hasattr(w, 'set'):
+                w.set('')
 
-        # Garantir que a frequência do monitor volte para 60 após limpar
-        try:
-            if 'Monitor Frequência (Hz)' in self.labels_e_entradas:
-                w = self.labels_e_entradas['Monitor Frequência (Hz)']['widget']
-                try:
-                    w.delete(0, tk.END)
-                except Exception:
-                    pass
-                try:
-                    w.insert(0, '60')
-                except Exception:
-                    pass
-        except Exception:
-            pass
+        if 'GPU Fabricante' in self.labels_e_entradas:
+            w = self.labels_e_entradas['GPU Fabricante']['widget']
+            if hasattr(w, 'set'):
+                w.set('')
+
+        self.cpu_ultima_geracao_var.set(False)
+        self.cpu_hyper_var.set(False)
+
+        if 'CPU Núcleos Performance' in self.labels_e_entradas:
+            try:
+                self.labels_e_entradas['CPU Núcleos Performance']['widget'].delete(0, tk.END)
+            except Exception:
+                pass
+        if 'CPU Núcleos Eficiência' in self.labels_e_entradas:
+            try:
+                self.labels_e_entradas['CPU Núcleos Eficiência']['widget'].delete(0, tk.END)
+            except Exception:
+                pass
+
+        if 'Monitor Frequência (Hz)' in self.labels_e_entradas:
+            w = self.labels_e_entradas['Monitor Frequência (Hz)']['widget']
+            try:
+                w.delete(0, tk.END)
+            except Exception:
+                pass
+            try:
+                w.insert(0, '60')
+            except Exception:
+                pass
 
         self.item_selecionado_index = None
         self.lista_widget.tag_remove("selected", '1.0', tk.END)
@@ -547,7 +517,6 @@ class InventarioApp(tk.Tk):
         self._atualizar_campos_cpu()
 
         if getattr(comp.processador, 'fabricante', '').upper() == 'INTEL' and getattr(comp.processador, 'ultima_geracao', False):
-            # preencher campos performance/eff
             try:
                 self.labels_e_entradas['CPU Núcleos Performance']['widget'].insert(0, str(comp.processador.perf_cores))
                 self.labels_e_entradas['CPU Núcleos Eficiência']['widget'].insert(0, str(comp.processador.eff_cores))
@@ -558,7 +527,6 @@ class InventarioApp(tk.Tk):
                 self.labels_e_entradas['CPU Núcleos']['widget'].insert(0, str(comp.processador.nucleos))
             except Exception:
                 pass
-        # definir hyperthread quando aplicável
         try:
             self.cpu_hyper_var.set(bool(getattr(comp.processador, 'hyperthread', False)))
         except Exception:
@@ -625,7 +593,6 @@ class InventarioApp(tk.Tk):
             messagebox.showerror("Erro Inesperado", f"Ocorreu um erro: {e}")
 
     def _salvar_arquivo(self):
-        """Salva o inventário em um arquivo JSON."""
         try:
             filepath = filedialog.asksaveasfilename(
                 defaultextension=".json",
