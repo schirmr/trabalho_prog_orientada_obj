@@ -73,17 +73,31 @@ class PlacaDeVideo:
         return {'modelo': self.modelo, 'memoria_vram': self.memoria_vram, 'fabricante': self.fabricante}
 
 class MemoriaRAM:
-    def __init__(self, capacidade_gb, velocidade_mhz):
+    def __init__(self, capacidade_gb, velocidade_mhz, num_modulos=1):
         if capacidade_gb <= 0 or velocidade_mhz <= 0:
             raise ValueError("Memória RAM: Capacidade e velocidade são obrigatórias.")
+        if num_modulos not in (1, 2, 4):
+            raise ValueError("Memória RAM: número de módulos deve ser 1, 2 ou 4.")
+
         self.capacidade_gb = int(capacidade_gb)
         self.velocidade_mhz = int(velocidade_mhz)
+        self.num_modulos = int(num_modulos)
+
+        if self.capacidade_gb % self.num_modulos != 0:
+            raise ValueError("Memória RAM: a capacidade total deve ser divisível pelo número de módulos (tamanho por módulo inteiro).")
+
+        self.tamanho_por_modulo = self.capacidade_gb // self.num_modulos
 
     def get_info(self):
-        return f"RAM: {self.capacidade_gb}GB {self.velocidade_mhz}MHz"
+        return f"RAM: {self.capacidade_gb}GB ({self.num_modulos}x{self.tamanho_por_modulo}GB) {self.velocidade_mhz}MHz"
     
     def to_dict(self):
-        return {'capacidade_gb': self.capacidade_gb, 'velocidade_mhz': self.velocidade_mhz}
+        return {
+            'capacidade_gb': self.capacidade_gb,
+            'velocidade_mhz': self.velocidade_mhz,
+            'num_modulos': self.num_modulos,
+            'tamanho_por_modulo': self.tamanho_por_modulo
+        }
 
 
 class Monitor:
