@@ -4,12 +4,12 @@ import json
 
 from modelos import (
     Processador, PlacaDeVideo, MemoriaRAM, Monitor, MonitorGamer,
-    ComputadorOffice, ComputadorGamer, ComputadorIntermediario
+    ComputadorOffice, ComputadorGamer, ComputadorIntermediario, ComputadorWorkstation
 )
-
+## Configuração do Formulário de cada campo
 class InventarioApp(tk.Tk):
     FORM_CONFIG = [
-        {'name': 'Tipo', 'type': ttk.Combobox, 'grid': {'row': 0, 'col': 0, 'colspan': 5}, 'options': {'state': 'readonly', 'values': ['ComputadorOffice', 'ComputadorGamer', 'ComputadorIntermediario']}, 'targets': ['all']},
+        {'name': 'Tipo', 'type': ttk.Combobox, 'grid': {'row': 0, 'col': 0, 'colspan': 5}, 'options': {'state': 'readonly', 'values': ['ComputadorOffice', 'ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']}, 'targets': ['all']},
         {'name': 'Tag de Identificação', 'type': ttk.Entry, 'grid': {'row': 1, 'col': 0, 'colspan': 5}, 'targets': ['all']},
         {'name': 'CPU Fabricante', 'type': ttk.Combobox, 'grid': {'row': 3, 'col': 0}, 'options': {'values': ['AMD', 'INTEL'], 'state': 'readonly'}, 'targets': ['all']},
         {'name': 'CPU Família', 'type': ttk.Combobox, 'grid': {'row': 3, 'col': 2}, 'options': {'state': 'readonly'}, 'targets': ['all']},
@@ -19,20 +19,22 @@ class InventarioApp(tk.Tk):
         {'name': 'CPU Última Geração', 'type': ttk.Checkbutton, 'grid': {'row': 5, 'col': 0}, 'options': {'text': 'Arquitetura P+E', 'state': 'disabled'}, 'targets': ['all']},
         {'name': 'CPU Núcleos Performance', 'type': ttk.Entry, 'grid': {'row': 5, 'col': 2}, 'options': {'state': 'readonly'}, 'targets': ['all']},
         {'name': 'CPU Núcleos Eficiência', 'type': ttk.Entry, 'grid': {'row': 5, 'col': 4}, 'options': {'state': 'readonly'}, 'targets': ['all']},
-        {'name': 'Módulos RAM', 'type': ttk.Combobox, 'grid': {'row': 6, 'col': 0}, 'options': {'values': ['1', '2', '4'], 'state': 'readonly'}, 'targets': ['all']},
+        {'name': 'Módulos RAM', 'type': ttk.Combobox, 'grid': {'row': 6, 'col': 0}, 'options': {'values': ['1', '2', '4', '8'], 'state': 'readonly'}, 'targets': ['all']},
         {'name': 'Tamanho por Módulo (GB)', 'type': ttk.Entry, 'grid': {'row': 6, 'col': 2}, 'targets': ['all']},
         {'name': 'RAM (MHz)', 'type': ttk.Entry, 'grid': {'row': 6, 'col': 4}, 'targets': ['all']},
-        {'name': 'SSD (GB)', 'type': ttk.Entry, 'grid': {'row': 8, 'col': 0}, 'targets': ['ComputadorOffice']},
-        {'name': 'Fonte (W)', 'type': ttk.Entry, 'grid': {'row': 8, 'col': 0}, 'targets': ['ComputadorGamer']},
-        {'name': 'GPU Fabricante', 'type': ttk.Combobox, 'grid': {'row': 9, 'col': 0}, 'options': {'values': ['AMD', 'NVIDIA', 'INTEL'], 'state': 'readonly'}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario']},
-        {'name': 'GPU Modelo', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 2}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario']},
-        {'name': 'GPU VRAM (GB)', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 4}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario']},
+        {'name': 'SSD Tipo', 'type': ttk.Combobox, 'grid': {'row': 8, 'col': 0}, 'options': {'values': ['SATA', 'NVMe'], 'state': 'readonly'}, 'targets': ['all']},
+        {'name': 'SSD Capacidade (GB)', 'type': ttk.Entry, 'grid': {'row': 8, 'col': 2}, 'targets': ['all']},
+        {'name': 'HD Secundário (GB)', 'type': ttk.Entry, 'grid': {'row': 8, 'col': 4}, 'targets': ['all']},
+        {'name': 'Fonte (W)', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 0}, 'targets': ['ComputadorGamer', 'ComputadorWorkstation']},
+        {'name': 'GPU Fabricante', 'type': ttk.Combobox, 'grid': {'row': 9, 'col': 0}, 'options': {'values': ['AMD', 'NVIDIA', 'INTEL'], 'state': 'readonly'}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
+        {'name': 'GPU Modelo', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 2}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
+        {'name': 'GPU VRAM (GB)', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 4}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
         {'name': 'Monitor Marca', 'type': ttk.Entry, 'grid': {'row': 11, 'col': 0}, 'targets': ['all']},
         {'name': 'Monitor Modelo', 'type': ttk.Entry, 'grid': {'row': 11, 'col': 2}, 'targets': ['all']},
         {'name': 'Monitor Polegadas (")', 'type': ttk.Entry, 'grid': {'row': 12, 'col': 0}, 'targets': ['all']},
         {'name': 'Monitor Frequência (Hz)', 'type': ttk.Entry, 'grid': {'row': 12, 'col': 2}, 'targets': ['all']},
     ]
-
+    ## Construtor da Interface Gráfica
     def __init__(self):
         super().__init__()
         self.title("Sistema de Inventário de Computadores")
@@ -44,12 +46,13 @@ class InventarioApp(tk.Tk):
         
         self.cpu_ultima_geracao_var = tk.BooleanVar(value=False)
         self.cpu_hyper_var = tk.BooleanVar(value=False)
+    # GPU professional flag removed from UI; detection is done by model name
 
         self.processadores_db = self._carregar_processadores()
         self._criar_widgets()
         self._atualizar_lista()
         self._update_form_visibility()
-    
+    ## Carrega a base de dados de processadores a partir do arquivo JSON
     def _carregar_processadores(self):
         try:
             with open('processadores.json', 'r', encoding='utf-8') as f:
@@ -58,7 +61,7 @@ class InventarioApp(tk.Tk):
             messagebox.showerror("Erro Crítico", f"Não foi possível carregar 'processadores.json': {e}")
             self.destroy()
             return []
-
+    ## Cria os widgets da interface gráfica
     def _criar_widgets(self):
         main_frame = ttk.Frame(self, padding="10")
         main_frame.pack(fill="both", expand=True)
@@ -103,14 +106,14 @@ class InventarioApp(tk.Tk):
         self.lista_widget.config(yscrollcommand=v_scrollbar.set)
         h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=self.lista_widget.xview); h_scrollbar.pack(fill="x", pady=2)
         self.lista_widget.config(xscrollcommand=h_scrollbar.set)
-
+    ## Métodos Auxiliares
     def _set_widget_state(self, widget_name, state):
         widget = self.widgets[widget_name]['widget']
         if isinstance(widget, ttk.Checkbutton):
             widget.config(state=state)
         else:
             widget.config(state=state)
-
+    ## Define o valor de um campo, respeitando seu estado atual
     def _set_field_value(self, widget_name, value, is_manual_mode=False):
         widget = self.widgets[widget_name]['widget']
         current_state = widget.cget('state')
@@ -123,7 +126,7 @@ class InventarioApp(tk.Tk):
         if current_state == 'readonly' and not is_manual_mode:
             widget.config(state='readonly')
 
-
+    ## Atualiza os campos relacionados ao processador com base nas seleções feitas
     def _update_cpu_fields(self, event=None):
         fabricante = self.widgets['CPU Fabricante']['widget'].get()
         familia = self.widgets['CPU Família']['widget'].get()
@@ -175,7 +178,7 @@ class InventarioApp(tk.Tk):
                 self.cpu_ultima_geracao_var.set(False)
 
         self._update_form_visibility()
-
+    ## Cria um objeto Processador a partir de um dicionário de dados
     def _create_processador_from_dict(self, data: dict):
         if not data:
             raise ValueError('Dados do processador inválidos')
@@ -191,6 +194,25 @@ class InventarioApp(tk.Tk):
             hyper = bool(data.get('hyperthread', False))
             return Processador(modelo=modelo, fabricante=fabricante, nucleos=nucleos, hyperthread=hyper)
 
+    ## Detecta se o nome do modelo/fabricante indica uma GPU profissional
+    def _is_professional_gpu(self, modelo: str, fabricante: str) -> bool:
+        if not modelo: return False
+        m = modelo.lower()
+        f = (fabricante or '').lower()
+        # palavras-chave comuns para GPUs profissionais; a lista pode ser substituída por um JSON no futuro
+        keywords = ['quadro', 'radeon pro', 'rtx a', 'firepro', 'nvs', 'wx', 'pro']
+        # marca específica/abreviações que frequentemente indicam GPUs profissionais
+        special = ['titan pro', 'vga pro']
+        for k in keywords:
+            if k in m: return True
+        for s in special:
+            if s in m: return True
+        # heurística simples: se o fabricante contém 'nvidia'/'amd'/'intel' and model contains 'pro' or startswith known pro prefixes
+        if 'nvidia' in f and ('quadro' in m or 'rtx a' in m): return True
+        if 'amd' in f and ('radeon pro' in m or 'wx' in m): return True
+        if 'intel' in f and 'pro' in m: return True
+        return False
+    ## Adiciona um novo computador ao inventário
     def _adicionar_computador(self):
         try:
             modelo_cpu = self._get_valor('CPU Modelo')
@@ -216,6 +238,8 @@ class InventarioApp(tk.Tk):
 
             mod_count = int(self._get_valor('Módulos RAM'))
             tamanho_por_mod = self._get_valor('Tamanho por Módulo (GB)', int)
+            if tamanho_por_mod <= 0:
+                raise ValueError('Tamanho por módulo deve ser um número positivo.')
             ram_total = mod_count * int(tamanho_por_mod)
             ram = MemoriaRAM(capacidade_gb=ram_total, velocidade_mhz=self._get_valor('RAM (MHz)', int), num_modulos=mod_count)
             
@@ -223,15 +247,29 @@ class InventarioApp(tk.Tk):
             tag = self._get_valor('Tag de Identificação')
             novo_computador = None
 
+            ssd_tipo = self._get_valor('SSD Tipo')
+            ssd_capacidade = self._get_valor('SSD Capacidade (GB)', int)
+            hdd_sec = self._get_valor('HD Secundário (GB)', int, False) or 0
+
             if tipo == "ComputadorOffice":
                 monitor = Monitor(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int, False) or 60)
-                novo_computador = ComputadorOffice(tag, cpu, ram, self._get_valor('SSD (GB)', int), monitor)
+                novo_computador = ComputadorOffice(tag, cpu, ram, ssd_capacidade, ssd_tipo, hdd_sec, monitor)
             elif tipo in ("ComputadorGamer", "ComputadorIntermediario"):
-                gpu = PlacaDeVideo(modelo=self._get_valor('GPU Modelo'), memoria_vram=self._get_valor('GPU VRAM (GB)', int), fabricante=self._get_valor('GPU Fabricante'))
+                gpu_model = self._get_valor('GPU Modelo')
+                gpu_fab = self._get_valor('GPU Fabricante')
+                profissional_flag = self._is_professional_gpu(gpu_model, gpu_fab)
+                gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=self._get_valor('GPU VRAM (GB)', int), fabricante=gpu_fab, profissional=profissional_flag)
                 monitor_class = MonitorGamer if tipo == "ComputadorGamer" else Monitor
                 monitor = monitor_class(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int))
-                if tipo == "ComputadorGamer": novo_computador = ComputadorGamer(tag, cpu, ram, gpu, self._get_valor('Fonte (W)', int), monitor)
-                else: novo_computador = ComputadorIntermediario(tag, cpu, ram, gpu, monitor)
+                if tipo == "ComputadorGamer": novo_computador = ComputadorGamer(tag, cpu, ram, gpu, self._get_valor('Fonte (W)', int), monitor, ssd_capacidade, ssd_tipo, hdd_sec)
+                else: novo_computador = ComputadorIntermediario(tag, cpu, ram, gpu, monitor, ssd_capacidade, ssd_tipo, hdd_sec)
+            elif tipo == "ComputadorWorkstation":
+                gpu_model = self._get_valor('GPU Modelo')
+                gpu_fab = self._get_valor('GPU Fabricante')
+                profissional_flag = self._is_professional_gpu(gpu_model, gpu_fab)
+                gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=self._get_valor('GPU VRAM (GB)', int), fabricante=gpu_fab, profissional=profissional_flag)
+                monitor = Monitor(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int))
+                novo_computador = ComputadorWorkstation(tag, cpu, ram, gpu, self._get_valor('Fonte (W)', int), monitor, ssd_capacidade, ssd_tipo, hdd_sec)
             
             if novo_computador:
                 if self.item_selecionado_index is None:
@@ -244,7 +282,7 @@ class InventarioApp(tk.Tk):
                 self._limpar_campos()
         except ValueError as e: messagebox.showerror("Erro de Entrada", f"Dado inválido: {e}")
         except Exception as e: messagebox.showerror("Erro Inesperado", f"Ocorreu um erro: {e}")
-
+    ## Manipula a seleção de um item na lista
     def _item_selecionado(self, event):
         try:
             tag_clicada = self.lista_widget.tag_names(tk.CURRENT)[-1]
@@ -285,8 +323,14 @@ class InventarioApp(tk.Tk):
         self._set_field_value('Tamanho por Módulo (GB)', comp.memoria_ram.tamanho_por_modulo)
         self._set_field_value('RAM (MHz)', comp.memoria_ram.velocidade_mhz)
         
-        if isinstance(comp, ComputadorOffice): self._set_field_value('SSD (GB)', comp.capacidade_ssd_gb)
-        elif isinstance(comp, (ComputadorGamer, ComputadorIntermediario)):
+        try:
+            self.widgets['SSD Tipo']['widget'].set(getattr(comp, 'tipo_ssd', ''))
+            self._set_field_value('SSD Capacidade (GB)', getattr(comp, 'capacidade_ssd_gb', ''))
+            self._set_field_value('HD Secundário (GB)', getattr(comp, 'hdd_secundario_gb', 0) or '')
+        except Exception:
+            pass
+
+        if isinstance(comp, (ComputadorGamer, ComputadorIntermediario, ComputadorWorkstation)):
             self.widgets['GPU Fabricante']['widget'].set(comp.placa_de_video.fabricante)
             self._set_field_value('GPU Modelo', comp.placa_de_video.modelo)
             self._set_field_value('GPU VRAM (GB)', comp.placa_de_video.memoria_vram)
@@ -298,7 +342,7 @@ class InventarioApp(tk.Tk):
             self._set_field_value('Monitor Frequência (Hz)', comp.monitor.frequencia_hz)
         
         self._update_form_visibility()
-    
+    ## Limpa todos os campos do formulário
     def _limpar_campos(self):
         for data in self.widgets.values():
             widget = data['widget']
@@ -311,10 +355,22 @@ class InventarioApp(tk.Tk):
         self.item_selecionado_index = None
         self._update_cpu_fields()
         self._update_form_visibility()
-
+    ## Atualiza a visibilidade dos campos do formulário com base nas seleções feitas
     def _update_form_visibility(self, event=None):
         tipo_selecionado = self.widgets['Tipo']['widget'].get()
         is_ultima_geracao = self.cpu_ultima_geracao_var.get()
+        try:
+            ram_widget = self.widgets['Módulos RAM']['widget']
+            if tipo_selecionado == 'ComputadorOffice':
+                ram_widget['values'] = ['1', '2']
+            elif tipo_selecionado in ('ComputadorGamer', 'ComputadorIntermediario'):
+                ram_widget['values'] = ['1', '2', '4']
+            elif tipo_selecionado == 'ComputadorWorkstation':
+                ram_widget['values'] = ['1', '2', '4', '8']
+            else:
+                ram_widget['values'] = ['1', '2', '4']
+        except Exception:
+            pass
         for name, data in self.widgets.items():
             targets = data['config']['targets']; is_visible = 'all' in targets or tipo_selecionado in targets
             (data['label'].grid, data['label'].grid_remove)[not is_visible](); (data['widget'].grid, data['widget'].grid_remove)[not is_visible]()
@@ -324,7 +380,7 @@ class InventarioApp(tk.Tk):
             (self.widgets[name]['label'].grid, self.widgets[name]['label'].grid_remove)[not is_ultima_geracao](); (self.widgets[name]['widget'].grid, self.widgets[name]['widget'].grid_remove)[not is_ultima_geracao]()
         for name in campos_legado:
             (self.widgets[name]['label'].grid_remove, self.widgets[name]['label'].grid)[not is_ultima_geracao](); (self.widgets[name]['widget'].grid_remove, self.widgets[name]['widget'].grid)[not is_ultima_geracao]()
-
+    ## Obtém o valor de um campo, convertendo para o tipo desejado
     def _get_valor(self, nome_campo, tipo=str, obrigatorio=True):
         try:
             if nome_campo == 'CPU Última Geração': return self.cpu_ultima_geracao_var.get()
@@ -338,10 +394,11 @@ class InventarioApp(tk.Tk):
             return tipo(valor)
         except (ValueError, TypeError): raise ValueError(f"Campo '{nome_campo}' deve ser um número válido.")
         except KeyError: return None
-
+    ## Atualiza o computador selecionado na lista
     def _atualizar_computador(self):
         if self.item_selecionado_index is None: messagebox.showwarning("Aviso", "Nenhum item selecionado para atualizar."); return
         self._adicionar_computador(); messagebox.showinfo("Sucesso", "Computador atualizado com sucesso!")
+    ## Atualiza a lista de computadores exibida na interface
     def _atualizar_lista(self):
         self.lista_widget.config(state=tk.NORMAL); self.lista_widget.delete('1.0', tk.END)
         for i, comp in enumerate(self.lista_computadores):
@@ -351,6 +408,7 @@ class InventarioApp(tk.Tk):
             self.lista_widget.tag_configure(f"header_{i}", font=("TkDefaultFont", 10, "bold"))
             self.lista_widget.insert(tk.END, header, (f"header_{i}", tag_id)); self.lista_widget.insert(tk.END, f"{info}\n\n", (tag_id,))
         self.lista_widget.config(state=tk.DISABLED)
+    ## Salva o inventário em um arquivo JSON
     def _salvar_arquivo(self):
         filepath = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json"), ("All files", "*.*")], title="Salvar inventário como...")
         if not filepath: return
