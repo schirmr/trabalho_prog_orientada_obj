@@ -2,10 +2,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import json
 
-from modelos import (
-    Processador, PlacaDeVideo, MemoriaRAM, Monitor, MonitorGamer,
-    ComputadorOffice, ComputadorGamer, ComputadorIntermediario, ComputadorWorkstation
-)
+from modelos import Processador, PlacaDeVideo, MemoriaRAM, Monitor, MonitorGamer, Disco
+# Carrega as subclasses que herdam da classe computador presente na pasta sub
+from sub.computador_office import ComputadorOffice
+from sub.computador_gamer import ComputadorGamer
+from sub.computador_intermediario import ComputadorIntermediario
+from sub.computador_workstation import ComputadorWorkstation
+
 ## Configuração do Formulário de cada campo
 class InventarioApp(tk.Tk):
     FORM_CONFIG = [
@@ -16,19 +19,19 @@ class InventarioApp(tk.Tk):
         {'name': 'CPU Modelo', 'type': ttk.Combobox, 'grid': {'row': 3, 'col': 4}, 'options': {'state': 'readonly'}, 'targets': ['all']},
         {'name': 'CPU Núcleos', 'type': ttk.Entry, 'grid': {'row': 4, 'col': 0}, 'options': {'state': 'readonly'}, 'targets': ['all']},
         {'name': 'CPU Hyperthread', 'type': ttk.Checkbutton, 'grid': {'row': 4, 'col': 2}, 'options': {'text': 'Hyperthread/SMT', 'state': 'disabled'}, 'targets': ['all']},
+        {'name': 'CPU Gráficos Integrados', 'type': ttk.Checkbutton, 'grid': {'row': 4, 'col': 4}, 'options': {'text': 'iGPU', 'state': 'disabled'}, 'targets': ['all']},
         {'name': 'CPU Última Geração', 'type': ttk.Checkbutton, 'grid': {'row': 5, 'col': 0}, 'options': {'text': 'Arquitetura P+E', 'state': 'disabled'}, 'targets': ['all']},
         {'name': 'CPU Núcleos Performance', 'type': ttk.Entry, 'grid': {'row': 5, 'col': 2}, 'options': {'state': 'readonly'}, 'targets': ['all']},
         {'name': 'CPU Núcleos Eficiência', 'type': ttk.Entry, 'grid': {'row': 5, 'col': 4}, 'options': {'state': 'readonly'}, 'targets': ['all']},
         {'name': 'Módulos RAM', 'type': ttk.Combobox, 'grid': {'row': 6, 'col': 0}, 'options': {'values': ['1', '2', '4', '8'], 'state': 'readonly'}, 'targets': ['all']},
         {'name': 'Tamanho por Módulo (GB)', 'type': ttk.Entry, 'grid': {'row': 6, 'col': 2}, 'targets': ['all']},
         {'name': 'RAM (MHz)', 'type': ttk.Entry, 'grid': {'row': 6, 'col': 4}, 'targets': ['all']},
-        {'name': 'SSD Tipo', 'type': ttk.Combobox, 'grid': {'row': 8, 'col': 0}, 'options': {'values': ['SATA', 'NVMe'], 'state': 'readonly'}, 'targets': ['all']},
+        {'name': 'SSD Tipo', 'type': ttk.Combobox, 'grid': {'row': 8, 'col': 0}, 'options': {'values': ['SSD SATA', 'SSD NVMe'], 'state': 'readonly'}, 'targets': ['all']},
         {'name': 'SSD Capacidade (GB)', 'type': ttk.Entry, 'grid': {'row': 8, 'col': 2}, 'targets': ['all']},
-        {'name': 'HD Secundário (GB)', 'type': ttk.Entry, 'grid': {'row': 8, 'col': 4}, 'targets': ['all']},
-        {'name': 'Fonte (W)', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 0}, 'targets': ['ComputadorGamer', 'ComputadorWorkstation']},
+        {'name': 'HD (GB)', 'type': ttk.Entry, 'grid': {'row': 8, 'col': 4}, 'targets': ['all']},
         {'name': 'GPU Fabricante', 'type': ttk.Combobox, 'grid': {'row': 9, 'col': 0}, 'options': {'values': ['AMD', 'NVIDIA', 'INTEL'], 'state': 'readonly'}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
-        {'name': 'GPU Modelo', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 2}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
-        {'name': 'GPU VRAM (GB)', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 4}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
+        {'name': 'GPU Modelo', 'type': ttk.Combobox, 'grid': {'row': 9, 'col': 2}, 'options': {'state': 'readonly'}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
+        {'name': 'GPU VRAM (GB)', 'type': ttk.Entry, 'grid': {'row': 9, 'col': 4}, 'options': {'state': 'readonly'}, 'targets': ['ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation']},
         {'name': 'Monitor Marca', 'type': ttk.Entry, 'grid': {'row': 11, 'col': 0}, 'targets': ['all']},
         {'name': 'Monitor Modelo', 'type': ttk.Entry, 'grid': {'row': 11, 'col': 2}, 'targets': ['all']},
         {'name': 'Monitor Polegadas (")', 'type': ttk.Entry, 'grid': {'row': 12, 'col': 0}, 'targets': ['all']},
@@ -46,7 +49,8 @@ class InventarioApp(tk.Tk):
         
         self.cpu_ultima_geracao_var = tk.BooleanVar(value=False)
         self.cpu_hyper_var = tk.BooleanVar(value=False)
-    # GPU professional flag removed from UI; detection is done by model name
+        self.cpu_integrated_var = tk.BooleanVar(value=False)
+        self.gpus_db = self._carregar_gpus()
 
         self.processadores_db = self._carregar_processadores()
         self._criar_widgets()
@@ -60,6 +64,14 @@ class InventarioApp(tk.Tk):
         except (FileNotFoundError, json.JSONDecodeError) as e:
             messagebox.showerror("Erro Crítico", f"Não foi possível carregar 'processadores.json': {e}")
             self.destroy()
+            return []
+
+    def _carregar_gpus(self):
+        try:
+            with open('gpus.json', 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            messagebox.showerror("Erro Crítico", f"Não foi possível carregar 'gpus.json': {e}")
             return []
     ## Cria os widgets da interface gráfica
     def _criar_widgets(self):
@@ -76,6 +88,7 @@ class InventarioApp(tk.Tk):
             options = config.get('options', {}).copy()
             if name == 'CPU Última Geração': options['variable'] = self.cpu_ultima_geracao_var
             elif name == 'CPU Hyperthread': options['variable'] = self.cpu_hyper_var
+            elif name == 'CPU Gráficos Integrados': options['variable'] = self.cpu_integrated_var
             widget = config['type'](form_frame, **options)
             widget.grid(row=grid_info['row'], column=grid_info['col'] + 1, columnspan=grid_info.get('colspan', 1), sticky="ew", padx=5, pady=5)
             self.widgets[name] = {'label': label, 'widget': widget, 'config': config}
@@ -88,12 +101,13 @@ class InventarioApp(tk.Tk):
         self.widgets['CPU Fabricante']['widget'].bind("<<ComboboxSelected>>", self._update_cpu_fields)
         self.widgets['CPU Família']['widget'].bind("<<ComboboxSelected>>", self._update_cpu_fields)
         self.widgets['CPU Modelo']['widget'].bind("<<ComboboxSelected>>", self._update_cpu_fields)
+        self.widgets['GPU Fabricante']['widget'].bind("<<ComboboxSelected>>", self._update_gpu_models)
+        self.widgets['GPU Modelo']['widget'].bind("<<ComboboxSelected>>", self._update_gpu_vram)
         self.cpu_ultima_geracao_var.trace_add('write', lambda *args: self._update_form_visibility())
         
         button_frame = ttk.Frame(form_frame)
         button_frame.grid(row=99, column=0, columnspan=6, pady=10)
         ttk.Button(button_frame, text="Adicionar", command=self._adicionar_computador).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Atualizar Selecionado", command=self._atualizar_computador).pack(side="left", padx=5)
         ttk.Button(button_frame, text="Limpar Campos", command=self._limpar_campos).pack(side="left", padx=5)
         ttk.Button(button_frame, text="Salvar em Arquivo", command=self._salvar_arquivo).pack(side="right", padx=5)
         
@@ -101,7 +115,6 @@ class InventarioApp(tk.Tk):
         list_frame.pack(fill="both", expand=True, pady=5)
         self.lista_widget = tk.Text(list_frame, wrap="none", height=15)
         self.lista_widget.pack(side="left", fill="both", expand=True)
-        self.lista_widget.bind('<ButtonRelease-1>', self._item_selecionado)
         v_scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.lista_widget.yview); v_scrollbar.pack(side="right", fill="y")
         self.lista_widget.config(yscrollcommand=v_scrollbar.set)
         h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=self.lista_widget.xview); h_scrollbar.pack(fill="x", pady=2)
@@ -139,7 +152,11 @@ class InventarioApp(tk.Tk):
             self.widgets['CPU Família']['widget']['values'] = ["Outro"]
         
         if familia and familia != "Outro":
-            modelos = sorted([p['modelo'] for p in self.processadores_db if p['familia'] == familia])
+            tipo_selecionado = self.widgets['Tipo']['widget'].get()
+            if tipo_selecionado == 'ComputadorOffice':
+                modelos = sorted([p['modelo'] for p in self.processadores_db if p['familia'] == familia and p.get('integrated_gpu', False)])
+            else:
+                modelos = sorted([p['modelo'] for p in self.processadores_db if p['familia'] == familia])
             self.widgets['CPU Modelo']['widget']['values'] = ["Outro"] + modelos
         else:
             self.widgets['CPU Modelo']['widget']['values'] = ["Outro"]
@@ -152,7 +169,7 @@ class InventarioApp(tk.Tk):
                 self.widgets['CPU Modelo']['widget'].set('')
 
         cpu_spec_fields = ['CPU Núcleos', 'CPU Núcleos Performance', 'CPU Núcleos Eficiência']
-        cpu_check_fields = ['CPU Hyperthread', 'CPU Última Geração']
+        cpu_check_fields = ['CPU Hyperthread', 'CPU Última Geração', 'CPU Gráficos Integrados']
 
         if modelo == 'Outro' or familia == 'Outro':
             for field in cpu_spec_fields: self._set_widget_state(field, 'normal')
@@ -161,23 +178,89 @@ class InventarioApp(tk.Tk):
                 for field in cpu_spec_fields: self._set_field_value(field, '', True)
                 self.cpu_hyper_var.set(False)
                 self.cpu_ultima_geracao_var.set(False)
+                self.cpu_integrated_var.set(False)
         else:
             for field in cpu_spec_fields: self._set_widget_state(field, 'readonly')
             for field in cpu_check_fields: self._set_widget_state(field, 'disabled')
-            
+
             proc_data = next((p for p in self.processadores_db if p['modelo'] == modelo), None)
             if proc_data:
-                self.cpu_ultima_geracao_var.set(proc_data.get('ultima_geracao', False))
+                ultima = proc_data.get('ultima_geracao', False)
+                self.cpu_ultima_geracao_var.set(ultima)
                 self.cpu_hyper_var.set(proc_data.get('hyperthread', False))
-                self._set_field_value('CPU Núcleos', proc_data.get('nucleos', 'N/A'))
-                self._set_field_value('CPU Núcleos Performance', proc_data.get('perf_cores', 'N/A'))
-                self._set_field_value('CPU Núcleos Eficiência', proc_data.get('eff_cores', 'N/A'))
+                self.cpu_integrated_var.set(proc_data.get('integrated_gpu', False))
+                if ultima:
+                    perf = int(proc_data.get('perf_cores', 0) or 0)
+                    eff = int(proc_data.get('eff_cores', 0) or 0)
+                    total = perf + eff
+                    self._set_field_value('CPU Núcleos', total)
+                    self._set_field_value('CPU Núcleos Performance', perf)
+                    self._set_field_value('CPU Núcleos Eficiência', eff)
+                else:
+                    self._set_field_value('CPU Núcleos', proc_data.get('nucleos', 'N/A'))
+                    self._set_field_value('CPU Núcleos Performance', '')
+                    self._set_field_value('CPU Núcleos Eficiência', '')
             else:
                 for field in cpu_spec_fields: self._set_field_value(field, '')
                 self.cpu_hyper_var.set(False)
                 self.cpu_ultima_geracao_var.set(False)
 
         self._update_form_visibility()
+
+    def _update_gpu_models(self, event=None):
+        fab = self.widgets['GPU Fabricante']['widget'].get()
+        tipo_selecionado = self.widgets['Tipo']['widget'].get()
+        if not fab:
+            self.widgets['GPU Modelo']['widget']['values'] = []
+            try: self.widgets['GPU Modelo']['widget'].set('')
+            except Exception: pass
+            return
+        if tipo_selecionado == 'ComputadorWorkstation':
+            modelos = sorted([g['modelo'] for g in self.gpus_db if g['fabricante'] == fab and g.get('profissional', False)])
+        else:
+            modelos = sorted([g['modelo'] for g in self.gpus_db if g['fabricante'] == fab and not g.get('profissional', False)])
+        self.widgets['GPU Modelo']['widget']['values'] = modelos
+        try:
+            if modelos:
+                self.widgets['GPU Modelo']['widget'].set(modelos[0])
+            else:
+                self.widgets['GPU Modelo']['widget'].set('')
+        except Exception:
+            pass
+        try:
+            self._update_gpu_vram()
+        except Exception:
+            pass
+
+    def _is_professional_gpu(self, modelo: str, fabricante: str) -> bool:
+        if not modelo or modelo == 'Outro':
+            return False
+        for g in self.gpus_db:
+            if g.get('modelo') == modelo and g.get('fabricante') == fabricante:
+                return bool(g.get('profissional', False))
+        return False
+
+    def _update_gpu_vram(self, event=None):
+        try:
+            modelo = self.widgets['GPU Modelo']['widget'].get()
+            fabricante = self.widgets['GPU Fabricante']['widget'].get()
+        except Exception:
+            return
+        if not modelo or not fabricante:
+            try: self._set_field_value('GPU VRAM (GB)', '')
+            except Exception: pass
+            return
+        entry = next((g for g in self.gpus_db if g.get('modelo') == modelo and g.get('fabricante') == fabricante), None)
+        if entry:
+            vram = entry.get('memoria_vram', entry.get('vram_gb', ''))
+            try:
+                self._set_field_value('GPU VRAM (GB)', int(vram) if vram != '' else '')
+            except Exception:
+                try: self._set_field_value('GPU VRAM (GB)', vram)
+                except Exception: pass
+        else:
+            try: self._set_field_value('GPU VRAM (GB)', '')
+            except Exception: pass
     ## Cria um objeto Processador a partir de um dicionário de dados
     def _create_processador_from_dict(self, data: dict):
         if not data:
@@ -188,30 +271,11 @@ class InventarioApp(tk.Tk):
         if ultima:
             perf = data.get('perf_cores', 0)
             eff = data.get('eff_cores', 0)
-            return Processador(modelo=modelo, fabricante=fabricante, ultima_geracao=True, perf_cores=perf, eff_cores=eff)
+            return Processador(modelo=modelo, fabricante=fabricante, ultima_geracao=True, perf_cores=perf, eff_cores=eff, integrated_gpu=data.get('integrated_gpu', False))
         else:
             nucleos = data.get('nucleos')
             hyper = bool(data.get('hyperthread', False))
-            return Processador(modelo=modelo, fabricante=fabricante, nucleos=nucleos, hyperthread=hyper)
-
-    ## Detecta se o nome do modelo/fabricante indica uma GPU profissional
-    def _is_professional_gpu(self, modelo: str, fabricante: str) -> bool:
-        if not modelo: return False
-        m = modelo.lower()
-        f = (fabricante or '').lower()
-        # palavras-chave comuns para GPUs profissionais; a lista pode ser substituída por um JSON no futuro
-        keywords = ['quadro', 'radeon pro', 'rtx a', 'firepro', 'nvs', 'wx', 'pro']
-        # marca específica/abreviações que frequentemente indicam GPUs profissionais
-        special = ['titan pro', 'vga pro']
-        for k in keywords:
-            if k in m: return True
-        for s in special:
-            if s in m: return True
-        # heurística simples: se o fabricante contém 'nvidia'/'amd'/'intel' and model contains 'pro' or startswith known pro prefixes
-        if 'nvidia' in f and ('quadro' in m or 'rtx a' in m): return True
-        if 'amd' in f and ('radeon pro' in m or 'wx' in m): return True
-        if 'intel' in f and 'pro' in m: return True
-        return False
+            return Processador(modelo=modelo, fabricante=fabricante, nucleos=nucleos, hyperthread=hyper, integrated_gpu=data.get('integrated_gpu', False))
     ## Adiciona um novo computador ao inventário
     def _adicionar_computador(self):
         try:
@@ -229,6 +293,7 @@ class InventarioApp(tk.Tk):
                     "nucleos": self._get_valor('CPU Núcleos', int, False) if not is_ultima_geracao else 0,
                     "perf_cores": self._get_valor('CPU Núcleos Performance', int, False) if is_ultima_geracao else 0,
                     "eff_cores": self._get_valor('CPU Núcleos Eficiência', int, False) if is_ultima_geracao else 0,
+                    "integrated_gpu": self.cpu_integrated_var.get(),
                 }
                 cpu = self._create_processador_from_dict(cpu_data)
             else:
@@ -249,99 +314,49 @@ class InventarioApp(tk.Tk):
 
             ssd_tipo = self._get_valor('SSD Tipo')
             ssd_capacidade = self._get_valor('SSD Capacidade (GB)', int)
-            hdd_sec = self._get_valor('HD Secundário (GB)', int, False) or 0
+            hdd_sec = self._get_valor('HD (GB)', int, False) or 0
+
+            disco_principal = Disco(ssd_tipo, ssd_capacidade)
+            disco_sec = Disco('HD SATA', hdd_sec) if hdd_sec and int(hdd_sec) > 0 else None
 
             if tipo == "ComputadorOffice":
                 monitor = Monitor(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int, False) or 60)
-                novo_computador = ComputadorOffice(tag, cpu, ram, ssd_capacidade, ssd_tipo, hdd_sec, monitor)
+                novo_computador = ComputadorOffice(tag, cpu, ram, disco_principal, disco_sec, monitor)
             elif tipo in ("ComputadorGamer", "ComputadorIntermediario"):
                 gpu_model = self._get_valor('GPU Modelo')
                 gpu_fab = self._get_valor('GPU Fabricante')
                 profissional_flag = self._is_professional_gpu(gpu_model, gpu_fab)
-                gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=self._get_valor('GPU VRAM (GB)', int), fabricante=gpu_fab, profissional=profissional_flag)
+                gpu_entry = next((g for g in self.gpus_db if g.get('modelo') == gpu_model and g.get('fabricante') == gpu_fab), None)
+                if gpu_entry:
+                    memoria_vram = int(gpu_entry.get('memoria_vram', gpu_entry.get('vram_gb', 0) or 0))
+                else:
+                    memoria_vram = self._get_valor('GPU VRAM (GB)', int)
+                gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=memoria_vram, fabricante=gpu_fab, profissional=profissional_flag)
                 monitor_class = MonitorGamer if tipo == "ComputadorGamer" else Monitor
                 monitor = monitor_class(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int))
-                if tipo == "ComputadorGamer": novo_computador = ComputadorGamer(tag, cpu, ram, gpu, self._get_valor('Fonte (W)', int), monitor, ssd_capacidade, ssd_tipo, hdd_sec)
-                else: novo_computador = ComputadorIntermediario(tag, cpu, ram, gpu, monitor, ssd_capacidade, ssd_tipo, hdd_sec)
+                if tipo == "ComputadorGamer": novo_computador = ComputadorGamer(tag, cpu, ram, disco_principal, disco_sec, gpu, monitor)
+                else: novo_computador = ComputadorIntermediario(tag, cpu, ram, disco_principal, disco_sec, gpu, monitor)
             elif tipo == "ComputadorWorkstation":
                 gpu_model = self._get_valor('GPU Modelo')
                 gpu_fab = self._get_valor('GPU Fabricante')
                 profissional_flag = self._is_professional_gpu(gpu_model, gpu_fab)
-                gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=self._get_valor('GPU VRAM (GB)', int), fabricante=gpu_fab, profissional=profissional_flag)
+                gpu_entry = next((g for g in self.gpus_db if g.get('modelo') == gpu_model and g.get('fabricante') == gpu_fab), None)
+                if gpu_entry:
+                    memoria_vram = int(gpu_entry.get('memoria_vram', gpu_entry.get('vram_gb', 0) or 0))
+                else:
+                    memoria_vram = self._get_valor('GPU VRAM (GB)', int)
+                gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=memoria_vram, fabricante=gpu_fab, profissional=profissional_flag)
                 monitor = Monitor(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int))
-                novo_computador = ComputadorWorkstation(tag, cpu, ram, gpu, self._get_valor('Fonte (W)', int), monitor, ssd_capacidade, ssd_tipo, hdd_sec)
+                novo_computador = ComputadorWorkstation(tag, cpu, ram, disco_principal, disco_sec, gpu, monitor)
             
             if novo_computador:
-                if self.item_selecionado_index is None:
-                    if any(c.tag_identificacao.lower() == tag.lower() for c in self.lista_computadores):
-                        raise ValueError(f"A tag '{tag}' já está em uso.")
-                    self.lista_computadores.append(novo_computador)
-                else:
-                    self.lista_computadores[self.item_selecionado_index] = novo_computador
+                if any(c.tag_identificacao.lower() == tag.lower() for c in self.lista_computadores):
+                    raise ValueError(f"A tag '{tag}' já está em uso.")
+                self.lista_computadores.append(novo_computador)
                 self._atualizar_lista()
                 self._limpar_campos()
         except ValueError as e: messagebox.showerror("Erro de Entrada", f"Dado inválido: {e}")
         except Exception as e: messagebox.showerror("Erro Inesperado", f"Ocorreu um erro: {e}")
-    ## Manipula a seleção de um item na lista
-    def _item_selecionado(self, event):
-        try:
-            tag_clicada = self.lista_widget.tag_names(tk.CURRENT)[-1]
-            if not tag_clicada.startswith("item_"): return
-            self.item_selecionado_index = int(tag_clicada.split('_')[1])
-            comp = self.lista_computadores[self.item_selecionado_index]
-        except (IndexError, TypeError, ValueError):
-            self.item_selecionado_index = None; return
-
-        self._limpar_campos()
-        
-        proc_salvo = comp.processador
-        proc_no_db = next((p for p in self.processadores_db if p['modelo'] == proc_salvo.modelo), None)
-
-        self.widgets['Tipo']['widget'].set(comp.__class__.__name__)
-        self._set_field_value('Tag de Identificação', comp.tag_identificacao)
-        
-        self.widgets['CPU Fabricante']['widget'].set(proc_salvo.fabricante)
-        self._update_cpu_fields()
-
-        if proc_no_db: 
-            self.widgets['CPU Família']['widget'].set(proc_no_db.get('familia', ''))
-            self._update_cpu_fields()
-            self.widgets['CPU Modelo']['widget'].set(proc_no_db.get('modelo', ''))
-        else: 
-            self.widgets['CPU Família']['widget'].set("Outro")
-            self.widgets['CPU Modelo']['widget'].set("Outro")
-            self._update_cpu_fields() 
-            self.cpu_ultima_geracao_var.set(proc_salvo.ultima_geracao)
-            self.cpu_hyper_var.set(proc_salvo.hyperthread)
-            self._set_field_value('CPU Núcleos', proc_salvo.nucleos, True)
-            self._set_field_value('CPU Núcleos Performance', proc_salvo.perf_cores, True)
-            self._set_field_value('CPU Núcleos Eficiência', proc_salvo.eff_cores, True)
-
-        self._update_cpu_fields()
-        
-        self.widgets['Módulos RAM']['widget'].set(comp.memoria_ram.num_modulos)
-        self._set_field_value('Tamanho por Módulo (GB)', comp.memoria_ram.tamanho_por_modulo)
-        self._set_field_value('RAM (MHz)', comp.memoria_ram.velocidade_mhz)
-        
-        try:
-            self.widgets['SSD Tipo']['widget'].set(getattr(comp, 'tipo_ssd', ''))
-            self._set_field_value('SSD Capacidade (GB)', getattr(comp, 'capacidade_ssd_gb', ''))
-            self._set_field_value('HD Secundário (GB)', getattr(comp, 'hdd_secundario_gb', 0) or '')
-        except Exception:
-            pass
-
-        if isinstance(comp, (ComputadorGamer, ComputadorIntermediario, ComputadorWorkstation)):
-            self.widgets['GPU Fabricante']['widget'].set(comp.placa_de_video.fabricante)
-            self._set_field_value('GPU Modelo', comp.placa_de_video.modelo)
-            self._set_field_value('GPU VRAM (GB)', comp.placa_de_video.memoria_vram)
-            if isinstance(comp, ComputadorGamer): self._set_field_value('Fonte (W)', comp.potencia_fonte_w)
-        if hasattr(comp, 'monitor') and comp.monitor:
-            self._set_field_value('Monitor Marca', comp.monitor.marca)
-            self._set_field_value('Monitor Modelo', comp.monitor.modelo)
-            self._set_field_value('Monitor Polegadas (")', comp.monitor.tamanho_polegadas)
-            self._set_field_value('Monitor Frequência (Hz)', comp.monitor.frequencia_hz)
-        
-        self._update_form_visibility()
     ## Limpa todos os campos do formulário
     def _limpar_campos(self):
         for data in self.widgets.values():
@@ -371,20 +386,43 @@ class InventarioApp(tk.Tk):
                 ram_widget['values'] = ['1', '2', '4']
         except Exception:
             pass
+        try:
+            if 'GPU Fabricante' in self.widgets:
+                if tipo_selecionado == 'ComputadorWorkstation':
+                    self.widgets['GPU Fabricante']['widget']['values'] = ['AMD', 'NVIDIA']
+                else:
+                    self.widgets['GPU Fabricante']['widget']['values'] = ['AMD', 'NVIDIA', 'INTEL']
+                fab = self.widgets['GPU Fabricante']['widget'].get()
+                if fab:
+                    self._update_gpu_models()
+        except Exception:
+            pass
         for name, data in self.widgets.items():
             targets = data['config']['targets']; is_visible = 'all' in targets or tipo_selecionado in targets
             (data['label'].grid, data['label'].grid_remove)[not is_visible](); (data['widget'].grid, data['widget'].grid_remove)[not is_visible]()
         campos_ultima_geracao = ['CPU Última Geração', 'CPU Núcleos Performance', 'CPU Núcleos Eficiência']
-        campos_legado = ['CPU Núcleos', 'CPU Hyperthread']
+        campos_legado = ['CPU Hyperthread']
         for name in campos_ultima_geracao:
-            (self.widgets[name]['label'].grid, self.widgets[name]['label'].grid_remove)[not is_ultima_geracao](); (self.widgets[name]['widget'].grid, self.widgets[name]['widget'].grid_remove)[not is_ultima_geracao]()
+            (self.widgets[name]['label'].grid, self.widgets[name]['label'].grid_remove)[not is_ultima_geracao]()
+            (self.widgets[name]['widget'].grid, self.widgets[name]['widget'].grid_remove)[not is_ultima_geracao]()
         for name in campos_legado:
-            (self.widgets[name]['label'].grid_remove, self.widgets[name]['label'].grid)[not is_ultima_geracao](); (self.widgets[name]['widget'].grid_remove, self.widgets[name]['widget'].grid)[not is_ultima_geracao]()
-    ## Obtém o valor de um campo, convertendo para o tipo desejado
+            (self.widgets[name]['label'].grid_remove, self.widgets[name]['label'].grid)[not is_ultima_geracao]()
+            (self.widgets[name]['widget'].grid_remove, self.widgets[name]['widget'].grid)[not is_ultima_geracao]()
+        try:
+            familia_atual = self.widgets['CPU Família']['widget'].get()
+            if familia_atual and familia_atual != 'Outro':
+                if tipo_selecionado == 'ComputadorOffice':
+                    modelos = sorted([p['modelo'] for p in self.processadores_db if p['familia'] == familia_atual and p.get('integrated_gpu', False)])
+                else:
+                    modelos = sorted([p['modelo'] for p in self.processadores_db if p['familia'] == familia_atual])
+                self.widgets['CPU Modelo']['widget']['values'] = ['Outro'] + modelos
+        except Exception:
+            pass
     def _get_valor(self, nome_campo, tipo=str, obrigatorio=True):
         try:
             if nome_campo == 'CPU Última Geração': return self.cpu_ultima_geracao_var.get()
             if nome_campo == 'CPU Hyperthread': return self.cpu_hyper_var.get()
+            if nome_campo == 'CPU Gráficos Integrados': return self.cpu_integrated_var.get()
             widget = self.widgets[nome_campo]['widget']
             if not widget.winfo_ismapped(): return None
             valor = widget.get()
@@ -394,10 +432,6 @@ class InventarioApp(tk.Tk):
             return tipo(valor)
         except (ValueError, TypeError): raise ValueError(f"Campo '{nome_campo}' deve ser um número válido.")
         except KeyError: return None
-    ## Atualiza o computador selecionado na lista
-    def _atualizar_computador(self):
-        if self.item_selecionado_index is None: messagebox.showwarning("Aviso", "Nenhum item selecionado para atualizar."); return
-        self._adicionar_computador(); messagebox.showinfo("Sucesso", "Computador atualizado com sucesso!")
     ## Atualiza a lista de computadores exibida na interface
     def _atualizar_lista(self):
         self.lista_widget.config(state=tk.NORMAL); self.lista_widget.delete('1.0', tk.END)

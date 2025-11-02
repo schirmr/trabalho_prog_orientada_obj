@@ -5,7 +5,8 @@
     "modelo": "Ryzen 5 5600X",
     "nucleos": 6,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "AMD",
@@ -13,7 +14,17 @@
     "modelo": "Ryzen 7 5800X",
     "nucleos": 8,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
+  },
+  {
+    "fabricante": "AMD",
+    "familia": "Ryzen 5000G Series",
+    "modelo": "Ryzen 5 5600G",
+    "nucleos": 6,
+    "hyperthread": true,
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -21,7 +32,8 @@
     "modelo": "Core i7-7700K",
     "nucleos": 4,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -29,7 +41,8 @@
     "modelo": "Core i3-10100",
     "nucleos": 4,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -37,7 +50,8 @@
     "modelo": "Core i3-10100F",
     "nucleos": 4,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "INTEL",
@@ -45,7 +59,8 @@
     "modelo": "Core i3-10300",
     "nucleos": 4,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -53,7 +68,8 @@
     "modelo": "Core i5-10400",
     "nucleos": 6,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -61,7 +77,8 @@
     "modelo": "Core i5-10400F",
     "nucleos": 6,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "INTEL",
@@ -69,7 +86,8 @@
     "modelo": "Core i5-10600",
     "nucleos": 6,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -77,7 +95,8 @@
     "modelo": "Core i5-10600K",
     "nucleos": 6,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -85,7 +104,8 @@
     "modelo": "Core i5-10600KF",
     "nucleos": 6,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "INTEL",
@@ -93,7 +113,8 @@
     "modelo": "Core i7-10700",
     "nucleos": 8,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -101,7 +122,8 @@
     "modelo": "Core i7-10700F",
     "nucleos": 8,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "INTEL",
@@ -109,7 +131,8 @@
     "modelo": "Core i7-10700K",
     "nucleos": 8,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -117,7 +140,8 @@
     "modelo": "Core i7-10700KF",
     "nucleos": 8,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "INTEL",
@@ -125,7 +149,8 @@
     "modelo": "Core i9-10850K",
     "nucleos": 10,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -133,7 +158,8 @@
     "modelo": "Core i9-10900",
     "nucleos": 10,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -141,7 +167,8 @@
     "modelo": "Core i9-10900F",
     "nucleos": 10,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "INTEL",
@@ -149,7 +176,8 @@
     "modelo": "Core i9-10900K",
     "nucleos": 10,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -157,7 +185,8 @@
     "modelo": "Core i9-10900KF",
     "nucleos": 10,
     "hyperthread": true,
-    "ultima_geracao": false
+    "ultima_geracao": false,
+    "integrated_gpu": false
   },
   {
     "fabricante": "INTEL",
@@ -166,7 +195,8 @@
     "ultima_geracao": true,
     "perf_cores": 6,
     "eff_cores": 4,
-    "hyperthread": false
+    "hyperthread": false,
+    "integrated_gpu": true
   },
   {
     "fabricante": "INTEL",
@@ -175,6 +205,7 @@
     "ultima_geracao": true,
     "perf_cores": 8,
     "eff_cores": 8,
-    "hyperthread": false
+    "hyperthread": false,
+    "integrated_gpu": true
   }
 ]

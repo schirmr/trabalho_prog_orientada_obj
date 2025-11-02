@@ -1,0 +1,32 @@
+[
+  {
+    "fabricante": "AMD",
+    "modelo": "RX 6600",
+    "memoria_vram": 8,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 3060",
+    "memoria_vram": 12,
+    "profissional": false
+  },
+  {
+    "fabricante": "INTEL",
+    "modelo": "ARC B580",
+    "memoria_vram": 8,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "Quadro RTX 4000",
+    "memoria_vram": 8,
+    "profissional": true
+  },
+  {
+    "fabricante": "AMD",
+    "modelo": "Radeon Pro W6600",
+    "memoria_vram": 8,
+    "profissional": true
+  }
+]
