@@ -1,0 +1,2 @@
+# Ignora todas as pastas de cache de bytecode do Python
+__pycache__/

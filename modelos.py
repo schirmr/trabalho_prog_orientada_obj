@@ -65,8 +65,6 @@ class PlacaDeVideo:
             raise ValueError("Placa de Vídeo: fabricante deve ser 'AMD', 'NVIDIA' ou 'INTEL'.")
         if not modelo or memoria_vram <= 0:
             raise ValueError("Placa de Vídeo: Modelo e VRAM são obrigatórios.")
-        if profissional and fabricante not in ('AMD', 'NVIDIA'):
-            raise ValueError("Placa de Vídeo Profissional: apenas AMD ou NVIDIA são suportadas como profissionais.")
 
         self.modelo = modelo
         self.memoria_vram = int(memoria_vram)
