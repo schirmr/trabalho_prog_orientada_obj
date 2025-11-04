@@ -80,7 +80,7 @@ class PlacaDeVideo:
 # CLASSE DE MEMÓRIA RAM
 class MemoriaRAM:
     # Construtor com validações para memória RAM
-    def __init__(self, capacidade_gb, velocidade_mhz, num_modulos=1):
+    def __init__(self, capacidade_gb, velocidade_mhz, num_modulos):
         if capacidade_gb <= 0 or velocidade_mhz <= 0:
             raise ValueError("Memória RAM: Capacidade e velocidade são obrigatórias.")
         if num_modulos not in (1, 2, 4, 8):
@@ -109,14 +109,14 @@ class MemoriaRAM:
 # CLASSE DE MONITOR
 class Monitor:
     # Construtor com validações para monitor
-    def __init__(self, marca, modelo='Padrao', tamanho_polegadas=0, frequencia_hz=60):
-        if not marca:
-            raise ValueError("Monitor: Marca é obrigatória")
-        if not float(tamanho_polegadas) > 0:
-            raise ValueError("Monitor: Tamanho em polegadas deve ser maior que zero.")
+    def __init__(self, marca, modelo, tamanho_polegadas, frequencia_hz):
+        if not marca or not modelo:
+            raise ValueError("Monitor: Marca e modelo são obrigatórios.")
+        if float(tamanho_polegadas) <= 15:
+            raise ValueError("Monitor: Tamanho em polegadas deve ser maior que 15.")
 
         self.marca = marca
-        self.modelo = modelo or 'Padrao'
+        self.modelo = modelo
         self.tamanho_polegadas = float(tamanho_polegadas)
         freq = int(frequencia_hz)
         if freq < 60:
@@ -140,28 +140,26 @@ class MonitorGamer(Monitor):
     def __init__(self, marca, modelo, tamanho_polegadas, frequencia_hz):
         super().__init__(marca, modelo, tamanho_polegadas, frequencia_hz)
 
-        if not int(self.frequencia_hz) >= 120:
+        if int(self.frequencia_hz) < 120:
             raise ValueError("Monitor Gamer: a frequência deve ser de no mínimo 120Hz.")
 
 
 # CLASSE DISCO (SSD/HD)
 class Disco:
-    def __init__(self, tipo: str, capacidade_gb: int):
-        allowed = ('SSD SATA', 'SSD NVMe', 'HD SATA')
-        if tipo not in allowed:
-            raise ValueError(f"Disco: tipo inválido. Deve ser um de: {', '.join(allowed)}")
+    def __init__(self, tipo, capacidade_gb):
+        if tipo not in ('SSD SATA', 'SSD NVMe', 'HD SATA'):
+            raise ValueError(f"Disco: tipo inválido. Deve ser um de: SSD SATA, SSD NVMe, HD SATA")
         if not capacidade_gb or int(capacidade_gb) <= 0:
             raise ValueError("Disco: capacidade deve ser maior que zero.")
         self.tipo = tipo
         self.capacidade_gb = int(capacidade_gb)
-
+    # Métodos para exibir informações e converter para dicionário
     def get_info(self):
         return f"{self.tipo}: {self.capacidade_gb}GB"
-
+    # Método para converter o objeto em um dicionário
     def to_dict(self):
         return {'tipo': self.tipo, 'capacidade_gb': self.capacidade_gb}
 
-# CLASSES DE COMPUTADORES (PRINCIPAL COM HERANÇA E POLIMORFISMO)
 # CLASSE PAI DE COMPUTADORES
 class Computador:
     # Construtor com validações básicas
@@ -170,6 +168,10 @@ class Computador:
             raise ValueError("Tag de Identificação é obrigatória.")
         if not isinstance(disco_principal, Disco):
             raise ValueError("Disco principal (SSD) é obrigatório e deve ser um objeto Disco.")
+        if not isinstance(processador, Processador):
+            raise TypeError("O 'processador' fornecido não é um objeto Processador válido.")
+        if not isinstance(memoria_ram, MemoriaRAM):
+            raise TypeError("A 'memoria_ram' fornecida não é um objeto MemoriaRAM válido.")
         if not disco_principal.tipo.startswith('SSD'):
             raise ValueError("Disco principal deve ser um SSD (SSD SATA ou SSD NVMe).")
 
@@ -187,7 +189,7 @@ class Computador:
         return base
     # Método polimórfico para obter informações completas
     def get_info_completa(self):
-        return f"[Computador Genérico]\n{self.get_info_base()}"
+        return f"[Computador Genérico]\n{self.get_info_base()}" # Nunca usado, porém necessário para polimorfismo
     # Método para converter o objeto em um dicionário
     def to_dict_base(self):
         data = {
