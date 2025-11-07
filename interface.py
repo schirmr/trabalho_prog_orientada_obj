@@ -1,3 +1,4 @@
+import platform
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import json
@@ -41,8 +42,13 @@ class InventarioApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Sistema de Inventário de Computadores")
-        self.geometry("940x800")
         
+        so = platform.system()
+        if so == "Windows":
+            self.geometry("940x800")
+        else:
+            self.geometry("1100x800")
+
         self.lista_computadores = []
         self.item_selecionado_index = None
         self.widgets = {}

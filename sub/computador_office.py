@@ -8,6 +8,8 @@ class ComputadorOffice(Computador):
             raise ValueError("PC Office requer um processador com gráficos integrados (iGPU).")
         if not isinstance(monitor, Monitor):
             raise ValueError("PC Office deve ter um monitor simples (marca/polegadas).")
+        if not (memoria_ram.num_modulos == 1 or memoria_ram.num_modulos == 2):
+            raise ValueError("PC Office deve ter 1 ou 2 módulos de memória RAM.")
         self.monitor = monitor
 
     def get_info_completa(self):
