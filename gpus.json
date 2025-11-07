@@ -28,5 +28,83 @@
     "modelo": "Radeon Pro W6600",
     "memoria_vram": 8,
     "profissional": true
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 3050",
+    "memoria_vram": 8,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 3070",
+    "memoria_vram": 8,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 3080",
+    "memoria_vram": 10,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 3090",
+    "memoria_vram": 24,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 4060",
+    "memoria_vram": 8,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 4070",
+    "memoria_vram": 12,
+    "profissional": false
+  },
+  {
+    "fabricante": "NVIDIA",
+    "modelo": "RTX 4090",
+    "memoria_vram": 24,
+    "profissional": false
+  },
+  {
+    "fabricante": "AMD",
+    "modelo": "RX 7600",
+    "memoria_vram": 8,
+    "profissional": false
+  },
+  {
+    "fabricante": "AMD",
+    "modelo": "RX 6700 XT",
+    "memoria_vram": 12,
+    "profissional": false
+  },
+  {
+    "fabricante": "AMD",
+    "modelo": "RX 6800",
+    "memoria_vram": 16,
+    "profissional": false
+  },
+  {
+    "fabricante": "AMD",
+    "modelo": "RX 6800 XT",
+    "memoria_vram": 16,
+    "profissional": false
+  },
+  {
+    "fabricante": "AMD",
+    "modelo": "RX 6900 XT",
+    "memoria_vram": 16,
+    "profissional": false
+  },
+  {
+    "fabricante": "AMD",
+    "modelo": "RX 7700 XT",
+    "memoria_vram": 12,
+    "profissional": false
   }
 ]
