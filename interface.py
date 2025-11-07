@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import json
 
-from modelos import Processador, PlacaDeVideo, MemoriaRAM, Monitor, MonitorGamer, Disco
+from modelos import Processador, PlacaDeVideo, MemoriaRAM, Monitor, MonitorGamer, Disco, Computador
 # Carrega as subclasses que herdam da classe computador presente na pasta sub
 from sub.computador_office import ComputadorOffice
 from sub.computador_gamer import ComputadorGamer

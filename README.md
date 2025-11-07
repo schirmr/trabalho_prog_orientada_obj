@@ -4,7 +4,7 @@
 
 Para instalar o programa no computador é necessário seguir as seguintes etapas:
 
-**Ambiente Linux**
+**Ambiente Linux (Ubuntu, Debian)**
 
 1. Acesse o terminal e atualize os pacotes do Linux:
 
@@ -16,7 +16,7 @@ sudo apt update
 2. Instale os pacotes do python:
 
 ```bash
-sudo apt install python3
+sudo apt install -y python3 python3-tk
 ```
 
 3. Clone o repositório e acesse a pasta do projeto:
@@ -27,7 +27,7 @@ sudo apt install python3
 
 4. **Após isso, execute o programa:**
     ```bash
-    python ./main.py
+    python3 ./main.py
     ```
 
 **Ambiente Windows**
