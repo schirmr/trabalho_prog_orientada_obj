@@ -1,6 +1,6 @@
 class Processador:
     ## Construtor com validações específicas para processadores Intel e AMD
-    def __init__(self, modelo, fabricante, nucleos=None, ultima_geracao=False, perf_cores=0, eff_cores=0, hyperthread=False, integrated_gpu=False):
+    def __init__(self, modelo, fabricante, nucleos=None, ultima_geracao=False, perf_cores=0, eff_cores=0, hyperthread=False, integrated_gpu=False, familia=None):
         if not modelo:
             raise ValueError("Processador: Modelo é obrigatório.")
         if fabricante not in ('AMD', 'INTEL'):
@@ -15,6 +15,8 @@ class Processador:
 
         self.perf_cores = max(0, perf)
         self.eff_cores = max(0, eff)
+
+        self.familia = familia if familia is not None else None
 
         if fabricante == 'INTEL' and self.ultima_geracao:
             if (self.perf_cores + self.eff_cores) <= 0:
@@ -37,6 +39,7 @@ class Processador:
         self.integrated_gpu = bool(integrated_gpu)
     ## Métodos para exibir informações e converter para dicionário
     def get_info(self):
+        fam = f" {self.familia}" if self.familia else ""
         if self.fabricante == 'INTEL' and self.ultima_geracao:
             base = f"CPU: {self.modelo} (Intel, {self.perf_cores} P + {self.eff_cores} E = {self.nucleos} núcleos)"
         else:
@@ -54,6 +57,7 @@ class Processador:
             'nucleos': self.nucleos,
             'hyperthread': self.hyperthread,
             'integrated_gpu': self.integrated_gpu,
+            'familia': self.familia,
         }
         if self.fabricante == 'INTEL' and self.ultima_geracao:
             data.update({'perf_cores': self.perf_cores, 'eff_cores': self.eff_cores})

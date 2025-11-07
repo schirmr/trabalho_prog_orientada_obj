@@ -41,7 +41,7 @@ class InventarioApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Sistema de Inventário de Computadores")
-        self.geometry("1280x720")
+        self.geometry("940x800")
         
         self.lista_computadores = []
         self.item_selecionado_index = None
@@ -79,7 +79,7 @@ class InventarioApp(tk.Tk):
         main_frame.pack(fill="both", expand=True) # Preenche todo o espaço disponível na janela principal.
         form_frame = ttk.LabelFrame(main_frame, text="Adicionar/Editar Computador", padding="10") # Frame para o formulário de entrada de dados. (Primeiro Titulo do Programa)
         form_frame.pack(fill="x", pady=5)
-        for i in [1, 3, 5]: form_frame.columnconfigure(i, weight=1) # Define que as colunas 1, 3 e 5 podem se expandir, ajustando o tamanho conforme a janela aumenta.
+        #for i in [1, 3, 5]: form_frame.columnconfigure(i, weight=1) # (responsividade) Define que as colunas 1, 3 e 5 podem se expandir, ajustando o tamanho conforme a janela aumenta. 
 
         for config in self.FORM_CONFIG:
             name, grid_info = config['name'], config['grid']
@@ -109,12 +109,23 @@ class InventarioApp(tk.Tk):
         button_frame.grid(row=99, column=0, columnspan=6, pady=10)
         ttk.Button(button_frame, text="Adicionar", command=self._adicionar_computador).pack(side="left", padx=5)
         ttk.Button(button_frame, text="Limpar Campos", command=self._limpar_campos).pack(side="left", padx=5)
+        ttk.Button(button_frame, text="Carregar Arquivo", command=self._carregar_arquivo).pack(side="left", padx=5)
         ttk.Button(button_frame, text="Salvar em Arquivo", command=self._salvar_arquivo).pack(side="right", padx=5)
-        
+
         list_frame = ttk.LabelFrame(main_frame, text="Inventário de Computadores", padding="10")
         list_frame.pack(fill="both", expand=True, pady=5)
+
+        search_frame = ttk.Frame(list_frame)
+        search_frame.pack(fill="x", pady=5)
+        ttk.Label(search_frame, text="Buscar TAG:").pack(side="left", padx=(0,6))
+        self.search_entry = ttk.Entry(search_frame)
+        self.search_entry.pack(side="left", padx=3, fill="both")
+        ttk.Button(search_frame, text="Buscar", command=self._buscar_e_carregar_por_tag).pack(side="left", padx=3)
+        ttk.Button(search_frame, text="Editar", command=self._salvar_item).pack(side="left", padx=3)
+        ttk.Button(search_frame, text="Excluir", command=self._excluir_por_tag).pack(side="left", padx=3)
+
         self.lista_widget = tk.Text(list_frame, wrap="none", height=15)
-        self.lista_widget.pack(side="left", fill="both", expand=True)
+        self.lista_widget.pack(side="left", fill="x", expand=True)
         v_scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.lista_widget.yview); v_scrollbar.pack(side="right", fill="y")
         self.lista_widget.config(yscrollcommand=v_scrollbar.set)
         h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=self.lista_widget.xview); h_scrollbar.pack(fill="x", pady=2)
@@ -257,13 +268,13 @@ class InventarioApp(tk.Tk):
         if ultima:
             perf = data.get('perf_cores', 0)
             eff = data.get('eff_cores', 0)
-            return Processador(modelo=modelo, fabricante=fabricante, ultima_geracao=True, perf_cores=perf, eff_cores=eff, integrated_gpu=data.get('integrated_gpu', False))
+            return Processador(modelo=modelo, fabricante=fabricante, ultima_geracao=True, perf_cores=perf, eff_cores=eff, integrated_gpu=data.get('integrated_gpu', False), familia=data.get('familia'))
         else:
             nucleos = data.get('nucleos')
             hyper = bool(data.get('hyperthread', False))
-            return Processador(modelo=modelo, fabricante=fabricante, nucleos=nucleos, hyperthread=hyper, integrated_gpu=data.get('integrated_gpu', False))
+            return Processador(modelo=modelo, fabricante=fabricante, nucleos=nucleos, hyperthread=hyper, integrated_gpu=data.get('integrated_gpu', False), familia=data.get('familia'))
     ## Adiciona um novo computador ao inventário
-    def _adicionar_computador(self):
+    def _ler_dados_do_formulario_e_criar_obj(self):
         try:
             modelo_cpu = self._get_valor('CPU Modelo')
             familia_cpu = self._get_valor('CPU Família')
@@ -335,14 +346,33 @@ class InventarioApp(tk.Tk):
                 monitor = Monitor(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int))
                 novo_computador = ComputadorWorkstation(tag, cpu, ram, disco_principal, disco_sec, gpu, monitor)
             
+
             if novo_computador:
-                if any(c.tag_identificacao.lower() == tag.lower() for c in self.lista_computadores):
-                    raise ValueError(f"A tag '{tag}' já está em uso.")
-                self.lista_computadores.append(novo_computador)
-                self._atualizar_lista()
-                self._limpar_campos()
-        except ValueError as e: messagebox.showerror("Erro de Entrada", f"Dado inválido: {e}")
-        except Exception as e: messagebox.showerror("Erro Inesperado", f"Ocorreu um erro: {e}")
+                return novo_computador # SUCESSO! Retorna o objeto criado.
+            else:
+                raise ValueError("Tipo de computador inválido.") # Força cair no 'except'
+
+        except ValueError as e: 
+            messagebox.showerror("Erro de Entrada", f"Dado inválido: {e}")
+            return None # FALHA: Retorna None
+        except Exception as e: 
+            messagebox.showerror("Erro Inesperado", f"Ocorreu um erro: {e}")
+            return None # FALHA: Retorna None
+
+    def _adicionar_computador(self):
+        novo_computador = self._ler_dados_do_formulario_e_criar_obj()
+
+        if novo_computador is None:
+            return
+
+        tag = novo_computador.tag_identificacao
+        if any(c.tag_identificacao.lower() == tag.lower() for c in self.lista_computadores):
+            messagebox.showerror("Erro de Duplicidade", f"A tag '{tag}' já está em uso.")
+            return
+        self.lista_computadores.append(novo_computador)
+        self._atualizar_lista()
+        self._limpar_campos()
+    
     ## Limpa todos os campos do formulário
     def _limpar_campos(self):
         for data in self.widgets.values():
@@ -353,9 +383,9 @@ class InventarioApp(tk.Tk):
                 if is_readonly: widget.config(state='normal')
                 widget.delete(0, tk.END)
                 if is_readonly: widget.config(state='readonly')
-        self.item_selecionado_index = None
         self._update_cpu_fields()
         self._update_form_visibility()
+        self.item_selecionado_index = None
     ## Atualiza dinamicamente a interface gráfica com base no tipo de computador selecionado e outras opções
     def _update_form_visibility(self, event=None):
         tipo_selecionado = self.widgets['Tipo']['widget'].get() # Obtém o tipo de computador selecionado
@@ -458,3 +488,172 @@ class InventarioApp(tk.Tk):
                 json.dump(lista_dict, f, indent=4) # Salva a lista_dict em formato JSON
             messagebox.showinfo("Sucesso", "Inventário salvo com sucesso!")
         except Exception as e: messagebox.showerror("Erro ao Salvar", f"Ocorreu um erro ao salvar o arquivo: {e}") # Exibe uma mensagem de erro caso ocorra algum problema ao salvar o arquivo
+
+    def _carregar_arquivo(self):
+        filepath = filedialog.askopenfilename(
+            defaultextension=".json", 
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")], 
+            title="Carregar inventário de...") # Abre a caixa de diálogo para abrir o arquivo
+        if not filepath: return # Se o usuário cancelar, retorna sem fazer nada (evitando possíveis erros)
+        try: # Tenta carregar o inventário do arquivo selecionado
+            with open(filepath, 'r', encoding='utf-8') as f: # Abre o arquivo para leitura (usando o utf-8 para funcionar bem em windows e linux)(caracteres especiais)
+                lista_dict = json.load(f) # Carrega a lista de dicionários do arquivo JSON
+            if not isinstance(lista_dict, list):
+                raise ValueError("Formato de arquivo inválido: Esperado uma lista de computadores.")
+            nova_lista = [] # Lista temporária para armazenar os computadores carregados
+            for item_data in lista_dict: # Percorre cada dicionário na lista carregada
+                tipo = item_data.get('tipo')
+                tag = item_data.get('tag_identificacao')
+                cpu_data = item_data.get('processador')
+                ram_data = item_data.get('memoria_ram')
+                disco_principal_data = item_data.get('disco_principal')
+                disco_secundario_data = item_data.get('disco_secundario')
+                monitor_data = item_data.get('monitor')
+                gpu_data = item_data.get('placa_de_video', None)
+
+                cpu = self._create_processador_from_dict(cpu_data)
+                ram = MemoriaRAM(ram_data['capacidade_gb'], ram_data['velocidade_mhz'], ram_data['num_modulos'])
+                disco_principal = Disco(disco_principal_data['tipo'], disco_principal_data['capacidade_gb'])
+                disco_secundario = None
+                if disco_secundario_data:
+                    disco_secundario = Disco(disco_secundario_data['tipo'], disco_secundario_data['capacidade_gb'])
+                if monitor_data['tipo'] == 'MonitorGamer':  
+                    monitor = MonitorGamer(monitor_data['marca'], monitor_data.get('modelo', 'Padrão'), monitor_data['tamanho_polegadas'], monitor_data['frequencia_hz'])
+                else:
+                    monitor = Monitor(monitor_data['marca'], monitor_data.get('modelo', 'Padrão'), monitor_data['tamanho_polegadas'], monitor_data['frequencia_hz'])
+                
+                if tipo == 'ComputadorOffice':
+                    computador = ComputadorOffice(tag, cpu, ram, disco_principal, disco_secundario, monitor)
+                elif tipo in ('ComputadorGamer', 'ComputadorIntermediario'):
+                    gpu = PlacaDeVideo(gpu_data['modelo'], gpu_data['memoria_vram'], gpu_data['fabricante'], gpu_data.get('profissional', False))
+                    if tipo == 'ComputadorGamer':
+                        computador = ComputadorGamer(tag, cpu, ram, disco_principal, disco_secundario, gpu, monitor)
+                    else:
+                        computador = ComputadorIntermediario(tag, cpu, ram, disco_principal, disco_secundario, gpu, monitor)
+                elif tipo == 'ComputadorWorkstation':
+                    gpu = PlacaDeVideo(gpu_data['modelo'], gpu_data['memoria_vram'], gpu_data['fabricante'], gpu_data.get('profissional', False))
+                    computador = ComputadorWorkstation(tag, cpu, ram, disco_principal, disco_secundario, gpu, monitor)
+                else:
+                    raise ValueError(f"Tipo de computador desconhecido: {tipo}")
+                nova_lista.append(computador) # Adiciona o computador criado à lista temporária 
+                self.lista_computadores = nova_lista # Substitui a lista atual pela nova lista carregada    
+                self._atualizar_lista() # Atualiza a exibição da lista na interface   
+        except Exception as e:
+            messagebox.showerror("Erro ao Carregar", f"Ocorreu um erro ao carregar o arquivo: {e}")
+            return
+    
+    def _buscar_e_carregar_por_tag(self):
+        tag_busca = self.search_entry.get().strip()
+        if not tag_busca:
+            messagebox.showwarning("Entrada Inválida", "Por favor, insira uma TAG para buscar.")
+            return
+
+        computador, indice = self._encontrar_computador_por_tag(tag_busca)
+
+        if computador: # Se 'computador' não for None
+            self.item_selecionado_index = indice 
+            self._preencher_campos_para_edicao(computador) 
+        else:
+            messagebox.showinfo("Não Encontrado", f"Nenhum computador encontrado com a TAG '{tag_busca}'.")
+    
+    def _salvar_item(self):  
+        try:
+            novo_computador_obj = self._ler_dados_do_formulario_e_criar_obj() 
+            if novo_computador_obj is None: return
+        except Exception as e:
+            messagebox.showerror("Erro de Validação", f"Não foi possível salvar: {e}")
+            return
+        
+        if self.item_selecionado_index is not None:
+            self.lista_computadores[self.item_selecionado_index] = novo_computador_obj
+            messagebox.showinfo("Sucesso", "Computador ATUALIZADO com sucesso!")
+        else:
+            self.lista_computadores.append(novo_computador_obj)
+            messagebox.showinfo("Sucesso", "Computador ADICIONADO com sucesso!")
+        self._atualizar_lista()
+        self._limpar_campos()
+
+    def _excluir_por_tag(self):
+        tag_busca = self.search_entry.get().strip()
+        if not tag_busca:
+            messagebox.showwarning("Entrada Inválida", "Por favor, insira uma TAG para excluir.")
+            return
+            
+        computador, indice = self._encontrar_computador_por_tag(tag_busca)
+
+        if computador: # Se 'computador' não for None
+            confirm = messagebox.askyesno("Confirmação de Exclusão", f"Tem certeza que deseja excluir o computador com a TAG '{tag_busca}'?")
+            if confirm:
+                # 'del' é o comando Python simples para deletar um item de uma lista pelo seu índice
+                del self.lista_computadores[indice] 
+                self._atualizar_lista()
+                messagebox.showinfo("Excluído", f"Computador com a TAG '{tag_busca}' foi excluído com sucesso.")
+        else:
+            # Se 'computador' for None, ele não achou
+            messagebox.showinfo("Não Encontrado", f"Nenhum computador encontrado com a TAG '{tag_busca}'.")
+    
+    ## Método auxiliar para encontrar um item na lista pela TAG
+    def _encontrar_computador_por_tag(self, tag_busca):
+        for i, comp in enumerate(self.lista_computadores):
+            if comp.tag_identificacao.lower() == tag_busca.lower():
+                return comp, i  # encontrou, retorna o objeto e sua posição (índice)
+        return None, None # nao encontrou
+
+
+    def _preencher_campos_para_edicao(self, computador: Computador):
+        try:
+            self._limpar_campos()
+            self._set_field_value('Tag de Identificação', computador.tag_identificacao)
+            tipo = computador.__class__.__name__
+            self.widgets['Tipo']['widget'].set(tipo)
+
+            cpu = computador.processador
+            self.widgets['CPU Fabricante']['widget'].set(cpu.fabricante)
+            self.widgets['CPU Família']['widget'].set(cpu.familia)
+            self._update_cpu_fields()
+            self.widgets['CPU Modelo']['widget'].set(cpu.modelo)
+            self._update_cpu_fields()
+            if cpu.ultima_geracao:
+                self.cpu_ultima_geracao_var.set(True)
+                self._set_field_value('CPU Núcleos Performance', cpu.perf_cores)
+                self._set_field_value('CPU Núcleos Eficiência', cpu.eff_cores)
+            else:
+                self.cpu_ultima_geracao_var.set(False)
+                self._set_field_value('CPU Núcleos', cpu.nucleos)
+            self.cpu_hyper_var.set(cpu.hyperthread)
+            self.cpu_integrated_var.set(cpu.integrated_gpu)
+
+            ram = computador.memoria_ram
+            self.widgets['Módulos RAM']['widget'].set(ram.num_modulos)
+            tamanho_por_mod = ram.capacidade_gb // ram.num_modulos
+            self._set_field_value('Tamanho por Módulo (GB)', tamanho_por_mod)
+            self._set_field_value('RAM (MHz)', ram.velocidade_mhz)
+
+            disco_principal = computador.disco_principal
+            self.widgets['SSD Tipo']['widget'].set(disco_principal.tipo)
+            self._set_field_value('SSD Capacidade (GB)', disco_principal.capacidade_gb)
+            if computador.disco_secundario:
+                disco_sec = computador.disco_secundario
+                self._set_field_value('HD (GB)', disco_sec.capacidade_gb)
+            else:
+                self._set_field_value('HD (GB)', '')
+
+            monitor = computador.monitor
+            self._set_field_value('Monitor Marca', monitor.marca)
+            self._set_field_value('Monitor Modelo', monitor.modelo)
+            self._set_field_value('Monitor Polegadas (")', monitor.tamanho_polegadas)
+            self._set_field_value('Monitor Frequência (Hz)', monitor.frequencia_hz)
+
+            if tipo in ('ComputadorGamer', 'ComputadorIntermediario', 'ComputadorWorkstation'):
+                gpu = computador.placa_de_video
+                self.widgets['GPU Fabricante']['widget'].set(gpu.fabricante)
+                self._update_gpu_models()
+                self.widgets['GPU Modelo']['widget'].set(gpu.modelo)
+                self._update_gpu_vram()
+                self.item_selecionado_index = self.lista_computadores.index(computador)
+                self._update_form_visibility()
+            
+        except Exception as e:
+            messagebox.showerror("Erro ao Editar", f"Ocorreu um erro ao preencher os campos para edição: {e}")
+
+        
