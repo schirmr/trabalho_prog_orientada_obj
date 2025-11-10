@@ -9,14 +9,14 @@ class Processador:
         self.modelo = modelo
         self.fabricante = fabricante
         self.ultima_geracao = bool(ultima_geracao)
+        self.familia = familia
 
-        perf = int(perf_cores) if perf_cores is not None else 0
-        eff = int(eff_cores) if eff_cores is not None else 0
-
-        self.perf_cores = max(0, perf)
-        self.eff_cores = max(0, eff)
-
-        self.familia = familia if familia is not None else None
+        if perf_cores is not None or eff_cores is not None:
+            self.perf_cores = int(perf_cores)
+            self.eff_cores = int(eff_cores)
+        else:
+            self.perf_cores = 0
+            self.eff_cores = 0
 
         if fabricante == 'INTEL' and self.ultima_geracao:
             if (self.perf_cores + self.eff_cores) <= 0:
@@ -37,9 +37,8 @@ class Processador:
         else:
             self.threads = int(self.nucleos)
         self.integrated_gpu = bool(integrated_gpu)
-    ## Métodos para exibir informações e converter para dicionário
+    ## Métodos para exibir informações
     def get_info(self):
-        fam = f" {self.familia}" if self.familia else ""
         if self.fabricante == 'INTEL' and self.ultima_geracao:
             base = f"CPU: {self.modelo} (Intel, {self.perf_cores} P + {self.eff_cores} E = {self.nucleos} núcleos)"
         else:
@@ -62,7 +61,7 @@ class Processador:
         if self.fabricante == 'INTEL' and self.ultima_geracao:
             data.update({'perf_cores': self.perf_cores, 'eff_cores': self.eff_cores})
         return data
-# CLASSE DE UM COMPONENTE ADICIONAL (diferente de PC OFFICE, classe de GPU Dedicada)
+# CLASSE DE UM COMPONENTE ADICIONAL (classe de GPU Dedicada p/Gamer, Workstation, Intermediária)
 class PlacaDeVideo:
     def __init__(self, modelo, memoria_vram, fabricante, profissional=False):
         if fabricante not in ('AMD', 'NVIDIA', 'INTEL'):
@@ -76,7 +75,10 @@ class PlacaDeVideo:
         self.profissional = bool(profissional)
     # Métodos para exibir informações e converter para dicionário
     def get_info(self):
-        tag = ' (Profissional)' if self.profissional else ''
+        if self.profissional:
+            tag = ' (Profissional)'
+        else:
+            tag = ''
         return f"GPU: {self.modelo} ({self.memoria_vram}GB VRAM, {self.fabricante}){tag}"
     # Método para converter o objeto em um dicionário
     def to_dict(self):
@@ -93,9 +95,6 @@ class MemoriaRAM:
         self.capacidade_gb = int(capacidade_gb)
         self.velocidade_mhz = int(velocidade_mhz)
         self.num_modulos = int(num_modulos)
-
-        if self.capacidade_gb % self.num_modulos != 0:
-            raise ValueError("Memória RAM: a capacidade total deve ser divisível pelo número de módulos (tamanho por módulo inteiro).")
 
         self.tamanho_por_modulo = self.capacidade_gb // self.num_modulos
     # Métodos para exibir informações e converter para dicionário
@@ -116,17 +115,17 @@ class Monitor:
     def __init__(self, marca, modelo, tamanho_polegadas, frequencia_hz):
         if not marca or not modelo:
             raise ValueError("Monitor: Marca e modelo são obrigatórios.")
-        if float(tamanho_polegadas) <= 15:
-            raise ValueError("Monitor: Tamanho em polegadas deve ser maior que 15.")
+        if float(tamanho_polegadas) <= 15 or float(tamanho_polegadas) >= 49:
+            raise ValueError("Monitor: Tamanho em polegadas deve 15<tam<49")
 
         self.marca = marca
         self.modelo = modelo
         self.tamanho_polegadas = float(tamanho_polegadas)
         freq = int(frequencia_hz)
-        if freq < 60:
-            raise ValueError("Monitor: frequência deve ser de pelo menos 60Hz.")
+        if freq < 60 or freq > 1000:
+            raise ValueError("Monitor: frequência deve ser de pelo menos 60Hz e não maior que 1000Hz.")
         self.frequencia_hz = freq
-    # Métodos para exibir informações e converter para dicionário
+    # Métodos para exibir informações
     def get_info(self):
         return f"Monitor: {self.marca} {self.modelo} ({self.tamanho_polegadas}\", {self.frequencia_hz}Hz)"
     # Método para converter o objeto em um dicionário
@@ -157,7 +156,7 @@ class Disco:
             raise ValueError("Disco: capacidade deve ser maior que zero.")
         self.tipo = tipo
         self.capacidade_gb = int(capacidade_gb)
-    # Métodos para exibir informações e converter para dicionário
+    # Métodos para exibir informações
     def get_info(self):
         return f"{self.tipo}: {self.capacidade_gb}GB"
     # Método para converter o objeto em um dicionário
@@ -186,8 +185,7 @@ class Computador:
         self.disco_secundario = disco_secundario
     # Métodos para exibir informações e converter para dicionário
     def get_info_base(self):
-        base = f"Tag: {self.tag_identificacao}\n  {self.processador.get_info()}\n  {self.memoria_ram.get_info()}"
-        base += f"\n  {self.disco_principal.get_info()}"
+        base = f"Tag: {self.tag_identificacao}\n  {self.processador.get_info()}\n  {self.memoria_ram.get_info()}\n  {self.disco_principal.get_info()}"
         if self.disco_secundario:
             base += f"\n  {self.disco_secundario.get_info()}"
         return base

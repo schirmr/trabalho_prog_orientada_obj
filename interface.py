@@ -37,28 +37,35 @@ class InventarioApp(tk.Tk):
         {'name': 'Monitor Modelo', 'type': ttk.Entry, 'grid': {'row': 11, 'col': 2}, 'targets': ['all']},
         {'name': 'Monitor Polegadas (")', 'type': ttk.Entry, 'grid': {'row': 12, 'col': 0}, 'targets': ['all']},
         {'name': 'Monitor Frequência (Hz)', 'type': ttk.Entry, 'grid': {'row': 12, 'col': 2}, 'targets': ['all']},
+        {'name': 'Ações', 'type': 'buttons', 'grid': {'row': 99, 'col': 0, 'colspan': 6}, 'buttons': [
+            {'text': 'Adicionar', 'command': '_adicionar_computador'},
+            {'text': 'Limpar Campos', 'command': '_limpar_campos'},
+            {'text': 'Carregar Arquivo', 'command': '_carregar_arquivo'},
+            {'text': 'Salvar em Arquivo', 'command': '_salvar_arquivo'},
+        ], 'targets': ['all']},
     ]
     ## Construtor da Interface Gráfica
     def __init__(self):
-        super().__init__()
+        super().__init__() # Inicializa a janela Tk.
         self.title("Sistema de Inventário de Computadores")
         
         so = platform.system()
         if so == "Windows":
-            self.geometry("940x800")
+            self.geometry("940x800") # Resolução para Windows
         else:
-            self.geometry("1100x800")
+            self.geometry("1100x800") # Resolução para Linux
 
-        self.lista_computadores = []
-        self.item_selecionado_index = None
-        self.widgets = {}
+        self.lista_computadores = [] # Lista para armazenar os computadores do inventário
+        self.item_selecionado_index = None # Índice do item selecionado para edição
+        self.widgets = {} # Dicionário para armazenar os widgets do formulário
         
         self.cpu_ultima_geracao_var = tk.BooleanVar(value=False)
         self.cpu_hyper_var = tk.BooleanVar(value=False)
         self.cpu_integrated_var = tk.BooleanVar(value=False)
+        
         self.gpus_db = self._carregar_gpus()
-
         self.processadores_db = self._carregar_processadores()
+        
         self._criar_widgets()
         self._atualizar_lista()
         self._update_form_visibility()
@@ -89,6 +96,16 @@ class InventarioApp(tk.Tk):
 
         for config in self.FORM_CONFIG:
             name, grid_info = config['name'], config['grid']
+            # suporte a botões declarados na configuração
+            if config['type'] == 'buttons':
+                btn_frame = ttk.Frame(form_frame)
+                btn_frame.grid(row=grid_info['row'], column=grid_info['col'], columnspan=grid_info.get('colspan', 1), pady=10)
+                for b in config.get('buttons', []):
+                    cmd = getattr(self, b['command'])
+                    ttk.Button(btn_frame, text=b['text'], command=cmd).pack(side="left", padx=5)
+                # armazena sem label para manter consistência com demais widgets
+                self.widgets[name] = {'label': None, 'widget': btn_frame, 'config': config}
+                continue
             label = ttk.Label(form_frame, text=f"{name}:")
             label.grid(row=grid_info['row'], column=grid_info['col'], padx=5, pady=5, sticky="w")
             options = config.get('options', {}).copy()
@@ -110,13 +127,6 @@ class InventarioApp(tk.Tk):
         self.widgets['GPU Fabricante']['widget'].bind("<<ComboboxSelected>>", self._update_gpu_models)
         self.widgets['GPU Modelo']['widget'].bind("<<ComboboxSelected>>", self._update_gpu_vram)
         self.cpu_ultima_geracao_var.trace_add('write', lambda *args: self._update_form_visibility())
-        
-        button_frame = ttk.Frame(form_frame)
-        button_frame.grid(row=99, column=0, columnspan=6, pady=10)
-        ttk.Button(button_frame, text="Adicionar", command=self._adicionar_computador).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Limpar Campos", command=self._limpar_campos).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Carregar Arquivo", command=self._carregar_arquivo).pack(side="left", padx=5)
-        ttk.Button(button_frame, text="Salvar em Arquivo", command=self._salvar_arquivo).pack(side="right", padx=5)
 
         list_frame = ttk.LabelFrame(main_frame, text="Inventário de Computadores", padding="10")
         list_frame.pack(fill="both", expand=True, pady=5)
@@ -416,22 +426,25 @@ class InventarioApp(tk.Tk):
                 self._update_gpu_models()
         # Para cada widget, verifica se ele deve estar visível para o tipo de computador selecionado (targets).
         for name, data in self.widgets.items():
-            targets = data['config']['targets'] 
-            is_visible = 'all' in targets or tipo_selecionado in targets # is_visible é verdadeiro se o campo deve ser exibido
-            # grid() exibe o widget, grid_remove() oculta o widget
-            if is_visible: 
-                data['label'].grid()
-                data['widget'].grid()
-            else: 
-                data['label'].grid_remove()
-                data['widget'].grid_remove()
+            targets = data['config']['targets']
+            is_visible = 'all' in targets or tipo_selecionado in targets
+            label = data.get('label')
+            widget = data['widget']
+            if is_visible:
+                if label: label.grid()
+                widget.grid()
+            else:
+                if label: label.grid_remove()
+                widget.grid_remove()        
         # Exibe ou oculta campos específicos com base na geração do processador, nucleos de performance e eficiencia 
         campos_ultima_geracao = ['CPU Última Geração', 'CPU Núcleos Performance', 'CPU Núcleos Eficiência']
         campos_legado = ['CPU Hyperthread']
         # Campos de CPU de última geração
         for name in campos_ultima_geracao:
+            if name not in self.widgets:
+                continue
             if is_ultima_geracao:
-                self.widget[name]['label'].grid()
+                self.widgets[name]['label'].grid()
                 self.widgets[name]['widget'].grid()
             else:
                 self.widgets[name]['label'].grid_remove()
@@ -656,8 +669,8 @@ class InventarioApp(tk.Tk):
                 self._update_gpu_models()
                 self.widgets['GPU Modelo']['widget'].set(gpu.modelo)
                 self._update_gpu_vram()
-                self.item_selecionado_index = self.lista_computadores.index(computador)
-                self._update_form_visibility()
+            self.item_selecionado_index = self.lista_computadores.index(computador)
+            self._update_form_visibility()
             
         except Exception as e:
             messagebox.showerror("Erro ao Editar", f"Ocorreu um erro ao preencher os campos para edição: {e}")
