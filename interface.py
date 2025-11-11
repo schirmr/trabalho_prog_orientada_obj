@@ -316,8 +316,8 @@ class InventarioApp(tk.Tk):
                 is_ultima_geracao = self.cpu_ultima_geracao_var.get()
                 cpu_data = {
                     "fabricante": self._get_valor('CPU Fabricante'),
-                    "familia": "Custom",
-                    "modelo": "Custom",
+                    "familia": "Outro",
+                    "modelo": "Outro",
                     "ultima_geracao": is_ultima_geracao,
                     "hyperthread": self.cpu_hyper_var.get(),
                     "nucleos": self._get_valor('CPU Núcleos', int, False) if not is_ultima_geracao else 0,
@@ -379,7 +379,6 @@ class InventarioApp(tk.Tk):
                 monitor = Monitor(marca=self._get_valor('Monitor Marca'), modelo=self._get_valor('Monitor Modelo', obrigatorio=False) or 'Padrão', tamanho_polegadas=self._get_valor('Monitor Polegadas (")', float), frequencia_hz=self._get_valor('Monitor Frequência (Hz)', int))
                 novo_computador = ComputadorWorkstation(tag, cpu, ram, disco_principal, disco_sec, gpu, monitor)
             
-
             if novo_computador:
                 return novo_computador # SUCESSO! Retorna o objeto criado.
             else:
