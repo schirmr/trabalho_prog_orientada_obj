@@ -37,7 +37,7 @@ class InventarioApp(tk.Tk):
         {'name': 'Monitor Modelo', 'type': ttk.Entry, 'grid': {'row': 11, 'col': 2}, 'targets': ['all']},
         {'name': 'Monitor Polegadas (")', 'type': ttk.Entry, 'grid': {'row': 12, 'col': 0}, 'targets': ['all']},
         {'name': 'Monitor Frequência (Hz)', 'type': ttk.Entry, 'grid': {'row': 12, 'col': 2}, 'targets': ['all']},
-        {'name': 'Ações', 'type': 'buttons', 'grid': {'row': 99, 'col': 0, 'colspan': 6}, 'buttons': [
+        {'name': 'Ações', 'type': 'buttons', 'grid': {'row': 13, 'col': 0, 'colspan': 6}, 'buttons': [
             {'text': 'Adicionar', 'command': '_adicionar_computador'},
             {'text': 'Limpar Campos', 'command': '_limpar_campos'},
             {'text': 'Carregar Arquivo', 'command': '_carregar_arquivo'},
@@ -63,26 +63,26 @@ class InventarioApp(tk.Tk):
         self.cpu_hyper_var = tk.BooleanVar(value=False)
         self.cpu_integrated_var = tk.BooleanVar(value=False)
         
-        self.gpus_db = self._carregar_gpus()
+        self.gpus_db = self._carregar_gpus() 
         self.processadores_db = self._carregar_processadores()
-        
-        self._criar_widgets()
-        self._atualizar_lista()
-        self._update_form_visibility()
+
+        self._criar_widgets() # Monta toda a interface gráfica
+        self._atualizar_lista() # limpa/exibe lista (vazia no inicio)
+        self._update_form_visibility() # Estado inicial dos campos/estados
     ## Carrega a base de dados de processadores a partir do arquivo JSON
     def _carregar_processadores(self):
         try:
             with open('processadores.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
+                return json.load(f) # Transforma o conteudo em um objeto Python
+        except (FileNotFoundError, json.JSONDecodeError) as e: # Se o arquivo nao existir ou estiver com erro de formatação (JSON inválido)
             messagebox.showerror("Erro Crítico", f"Não foi possível carregar 'processadores.json': {e}")
-            self.destroy()
-            return []
+            self.destroy() # Fecha o programa pois é impossível continuar sem a base de dados
+            return [] # Retorna uma lista vazia (pois precisa retornar algo)
     ## Carrega a base de dados de GPUs a partir do arquivo JSON
     def _carregar_gpus(self):
         try:
             with open('gpus.json', 'r', encoding='utf-8') as f:
-                return json.load(f)
+                return json.load(f) # Transforma o conteudo em um objeto Python
         except (FileNotFoundError, json.JSONDecodeError) as e:
             messagebox.showerror("Erro Crítico", f"Não foi possível carregar 'gpus.json': {e}")
             return []
@@ -92,43 +92,46 @@ class InventarioApp(tk.Tk):
         main_frame.pack(fill="both", expand=True) # Preenche todo o espaço disponível na janela principal.
         form_frame = ttk.LabelFrame(main_frame, text="Adicionar/Editar Computador", padding="10") # Frame para o formulário de entrada de dados. (Primeiro Titulo do Programa)
         form_frame.pack(fill="x", pady=5)
-        #for i in [1, 3, 5]: form_frame.columnconfigure(i, weight=1) # (responsividade) Define que as colunas 1, 3 e 5 podem se expandir, ajustando o tamanho conforme a janela aumenta. 
+        for i in [1, 3, 5]: form_frame.columnconfigure(i, weight=1) # (responsividade) Define que as colunas 1, 3 e 5 podem se expandir, ajustando o tamanho conforme a janela aumenta. 
 
+        # construção dos widgets dinamicamente com base no FORM_CONFIG
         for config in self.FORM_CONFIG:
             name, grid_info = config['name'], config['grid']
-            # suporte a botões declarados na configuração
+            # Configuração especial para botões no FORM
             if config['type'] == 'buttons':
                 btn_frame = ttk.Frame(form_frame)
-                btn_frame.grid(row=grid_info['row'], column=grid_info['col'], columnspan=grid_info.get('colspan', 1), pady=10)
+                btn_frame.grid(row=grid_info['row'], column=grid_info['col'], columnspan=grid_info.get('colspan', 1), pady=10) # Grade para os botões
                 for b in config.get('buttons', []):
                     cmd = getattr(self, b['command'])
                     ttk.Button(btn_frame, text=b['text'], command=cmd).pack(side="left", padx=5)
                 # armazena sem label para manter consistência com demais widgets
-                self.widgets[name] = {'label': None, 'widget': btn_frame, 'config': config}
-                continue
+                self.widgets[name] = {'label': None, 'widget': btn_frame, 'config': config} # armazena uma referência ao btn_frame
+                continue # pula para o próximo item do loop
             label = ttk.Label(form_frame, text=f"{name}:")
-            label.grid(row=grid_info['row'], column=grid_info['col'], padx=5, pady=5, sticky="w")
-            options = config.get('options', {}).copy()
+            label.grid(row=grid_info['row'], column=grid_info['col'], padx=5, pady=5, sticky="w") # sticky = grudar no lado oeste (west/esquerda)
+            options = config.get('options', {}).copy() # cria uma copia para nao alterar o original (FORM)
             if name == 'CPU Última Geração': options['variable'] = self.cpu_ultima_geracao_var
             elif name == 'CPU Hyperthread': options['variable'] = self.cpu_hyper_var
             elif name == 'CPU Gráficos Integrados': options['variable'] = self.cpu_integrated_var
-            widget = config['type'](form_frame, **options)
-            widget.grid(row=grid_info['row'], column=grid_info['col'] + 1, columnspan=grid_info.get('colspan', 1), sticky="ew", padx=5, pady=5)
-            self.widgets[name] = {'label': label, 'widget': widget, 'config': config}
-
+            widget = config['type'](form_frame, **options) # **options descompacta o dicionário em argumentos nomeados (abre o dicionaria e transforma cada par chave/valor em um argumento nomeado)
+            widget.grid(row=grid_info['row'], column=grid_info['col'] + 1, columnspan=grid_info.get('colspan', 1), sticky="ew", padx=5, pady=5) #posiciona o widget na grade
+            self.widgets[name] = {'label': label, 'widget': widget, 'config': config} # arnazena uma referência ao widget criado
+        # cria uma linha separadora horizontal para melhor organização visual
         ttk.Separator(form_frame, orient='horizontal').grid(row=2, column=0, columnspan=6, sticky='ew', pady=10)
         ttk.Separator(form_frame, orient='horizontal').grid(row=7, column=0, columnspan=6, sticky='ew', pady=10)
         ttk.Separator(form_frame, orient='horizontal').grid(row=10, column=0, columnspan=6, sticky='ew', pady=10)
-        
+        # quando algo é selecionado na combobox de tipo, atualiza a visibilidade dos campos
         self.widgets['Tipo']['widget'].bind("<<ComboboxSelected>>", self._update_form_visibility)
         self.widgets['CPU Fabricante']['widget'].bind("<<ComboboxSelected>>", self._update_cpu_fields)
         self.widgets['CPU Família']['widget'].bind("<<ComboboxSelected>>", self._update_cpu_fields)
         self.widgets['CPU Modelo']['widget'].bind("<<ComboboxSelected>>", self._update_cpu_fields)
         self.widgets['GPU Fabricante']['widget'].bind("<<ComboboxSelected>>", self._update_gpu_models)
         self.widgets['GPU Modelo']['widget'].bind("<<ComboboxSelected>>", self._update_gpu_vram)
-        self.cpu_ultima_geracao_var.trace_add('write', lambda *args: self._update_form_visibility())
+        
+        self.cpu_ultima_geracao_var.trace_add('write', lambda *args: self._update_form_visibility()) # observa a checkbox para quando ela mudar chamar o método
 
-        list_frame = ttk.LabelFrame(main_frame, text="Inventário de Computadores", padding="10")
+        # Cria o frame do inventario, o label e os botẽos de busca/edição/exclusão
+        list_frame = ttk.LabelFrame(main_frame, text="Inventário de Computadores", padding="10") 
         list_frame.pack(fill="both", expand=True, pady=5)
 
         search_frame = ttk.Frame(list_frame)
@@ -139,21 +142,21 @@ class InventarioApp(tk.Tk):
         ttk.Button(search_frame, text="Buscar", command=self._buscar_e_carregar_por_tag).pack(side="left", padx=3)
         ttk.Button(search_frame, text="Editar", command=self._salvar_item).pack(side="left", padx=3)
         ttk.Button(search_frame, text="Excluir", command=self._excluir_por_tag).pack(side="left", padx=3)
-
+        # Cria a área de texto para exibir a lista de computadores
         self.lista_widget = tk.Text(list_frame, wrap="none", height=15)
-        self.lista_widget.pack(side="left", fill="x", expand=True)
-        v_scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.lista_widget.yview); v_scrollbar.pack(side="right", fill="y")
+        self.lista_widget.pack(side="left", fill="both", expand=True)
+        v_scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=self.lista_widget.yview); v_scrollbar.pack(side="right", fill="y") # barra de rolagem vertical
         self.lista_widget.config(yscrollcommand=v_scrollbar.set)
-        h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=self.lista_widget.xview); h_scrollbar.pack(fill="x", pady=2)
+        h_scrollbar = ttk.Scrollbar(main_frame, orient="horizontal", command=self.lista_widget.xview); h_scrollbar.pack(side="bottom", fill="x", pady=2) # barra de rolagem horizontal
         self.lista_widget.config(xscrollcommand=h_scrollbar.set)
-    ## Métodos Auxiliares
+    ## Define o estado do widget (normal, readonly, disabled)
     def _set_widget_state(self, widget_name, state):
         widget = self.widgets[widget_name]['widget']
         widget.config(state=state)
     ## Define o valor de um campo, respeitando seu estado atual
     def _set_field_value(self, widget_name, value, is_manual_mode=False):
         widget = self.widgets[widget_name]['widget']
-        current_state = widget.cget('state') # Obtém o estado atual do widget (normal, readonly, disabled)
+        current_state = widget.cget('state') # Obtém o estado atual do widget (normal, readonly, disabled) (configure-get (ler o valor de uma configuração))
         if current_state == 'readonly' and not is_manual_mode: # Serve para conseguir deixar o estado normal para fazer modificações
             widget.config(state='normal')
         
