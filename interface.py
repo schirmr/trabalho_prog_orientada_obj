@@ -194,18 +194,32 @@ class InventarioApp(tk.Tk):
                 self.widgets['CPU Modelo']['widget'].set('')
             if event.widget == self.widgets['CPU Família']['widget']:
                 self.widgets['CPU Modelo']['widget'].set('')
+
         # Atualiza os campos de especificações do processador com base no modelo selecionado
         cpu_spec_fields = ['CPU Núcleos', 'CPU Núcleos Performance', 'CPU Núcleos Eficiência']
         cpu_check_fields = ['CPU Hyperthread', 'CPU Última Geração', 'CPU Gráficos Integrados']
+        
         # Se o modelo for "Outro" ou a família for "Outro", habilita a edição manual dos campos
         if modelo == 'Outro' or familia == 'Outro':
             for field in cpu_spec_fields: self._set_widget_state(field, 'normal')
-            for field in cpu_check_fields: self._set_widget_state(field, 'normal')
+            
+            # Habilita Hyperthread e iGPU para qualquer "Outro"
+            self._set_widget_state('CPU Hyperthread', 'normal')
+            self._set_widget_state('CPU Gráficos Integrados', 'normal')
+            
+            # Habilita 'Última Geração' SOMENTE SE for INTEL e "Outro"
+            if fabricante == 'INTEL':
+                self._set_widget_state('CPU Última Geração', 'normal')
+            else:
+                self._set_widget_state('CPU Última Geração', 'disabled')
+                self.cpu_ultima_geracao_var.set(False) # Garante que está desmarcado para AMD
+
             if event:
                 for field in cpu_spec_fields: self._set_field_value(field, '', True)
                 self.cpu_hyper_var.set(False)
                 self.cpu_ultima_geracao_var.set(False)
                 self.cpu_integrated_var.set(False)
+
         else: # Se um modelo válido for selecionado, preenche os campos com os dados do processador e torna-os somente leitura
             for field in cpu_spec_fields: self._set_widget_state(field, 'readonly')
             for field in cpu_check_fields: self._set_widget_state(field, 'disabled')
@@ -439,27 +453,49 @@ class InventarioApp(tk.Tk):
             else:
                 if label: label.grid_remove()
                 widget.grid_remove()        
-        # Exibe ou oculta campos específicos com base na geração do processador, nucleos de performance e eficiencia 
-        campos_ultima_geracao = ['CPU Última Geração', 'CPU Núcleos Performance', 'CPU Núcleos Eficiência']
-        campos_legado = ['CPU Hyperthread']
-        # Campos de CPU de última geração
-        for name in campos_ultima_geracao:
-            if name not in self.widgets:
-                continue
+        
+        # Exibe ou oculta campos específicos com base na geração do processador e fabricante
+        fabricante = self.widgets['CPU Fabricante']['widget'].get()
+        
+        # Define os widgets que vamos controlar
+        campos_pe = ['CPU Núcleos Performance', 'CPU Núcleos Eficiência']
+        widget_ultima_geracao_label = self.widgets['CPU Última Geração']['label']
+        widget_ultima_geracao_check = self.widgets['CPU Última Geração']['widget']
+        widget_hyperthread_label = self.widgets['CPU Hyperthread']['label']
+        widget_hyperthread_check = self.widgets['CPU Hyperthread']['widget']
+
+        if fabricante == 'INTEL':
+            # Se for INTEL, mostra o checkbox "Última Geração"
+            widget_ultima_geracao_label.grid()
+            widget_ultima_geracao_check.grid()
+            
             if is_ultima_geracao:
-                self.widgets[name]['label'].grid()
-                self.widgets[name]['widget'].grid()
+                # Se for P+E, mostra campos P+E e esconde Hyperthread
+                for name in campos_pe:
+                    self.widgets[name]['label'].grid()
+                    self.widgets[name]['widget'].grid()
+                widget_hyperthread_label.grid_remove()
+                widget_hyperthread_check.grid_remove()
             else:
+                # Se NÃO for P+E, esconde campos P+E e mostra Hyperthread
+                for name in campos_pe:
+                    self.widgets[name]['label'].grid_remove()
+                    self.widgets[name]['widget'].grid_remove()
+                widget_hyperthread_label.grid()
+                widget_hyperthread_check.grid()
+        
+        else: # Se NÃO for INTEL (ex: AMD)
+            # Esconde o checkbox P+E
+            widget_ultima_geracao_label.grid_remove()
+            widget_ultima_geracao_check.grid_remove()
+            # Esconde os campos P+E
+            for name in campos_pe:
                 self.widgets[name]['label'].grid_remove()
                 self.widgets[name]['widget'].grid_remove()
-        # Campos de CPU legado
-        for name in campos_legado:
-            if is_ultima_geracao:
-                self.widgets[name]['label'].grid_remove()
-                self.widgets[name]['widget'].grid_remove()
-            else:
-                self.widgets[name]['label'].grid()
-                self.widgets[name]['widget'].grid()
+            # Mostra o campo Hyperthread/SMT (pois AMD usa SMT)
+            widget_hyperthread_label.grid()
+            widget_hyperthread_check.grid()
+        
         # Atualiza os modelos de CPU com base na família selecionada
         familia_atual = self.widgets['CPU Família']['widget'].get() # Obtém a família de CPU selecionada (Ex: Intel core I5, AMD Ryzen 5, etc)
         if familia_atual and familia_atual != 'Outro':
