@@ -231,8 +231,8 @@ class InventarioApp(tk.Tk):
                 self.cpu_hyper_var.set(proc_data.get('hyperthread', False))
                 self.cpu_integrated_var.set(proc_data.get('integrated_gpu', False))
                 if ultima:
-                    perf = int(proc_data.get('perf_cores', 0) or 0)
-                    eff = int(proc_data.get('eff_cores', 0) or 0)
+                    perf = int(proc_data.get('perf_cores', 0))
+                    eff = int(proc_data.get('eff_cores', 0))
                     total = perf + eff
                     self._set_field_value('CPU Núcleos', total)
                     self._set_field_value('CPU Núcleos Performance', perf)
@@ -358,7 +358,7 @@ class InventarioApp(tk.Tk):
                 profissional_flag = self._is_professional_gpu(gpu_model, gpu_fab)
                 gpu_entry = next((g for g in self.gpus_db if g.get('modelo') == gpu_model and g.get('fabricante') == gpu_fab), None)
                 if gpu_entry:
-                    memoria_vram = int(gpu_entry.get('memoria_vram', 0) or 0)
+                    memoria_vram = int(gpu_entry.get('memoria_vram', 0))
                 else:
                     memoria_vram = self._get_valor('GPU VRAM (GB)', int)
                 gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=memoria_vram, fabricante=gpu_fab, profissional=profissional_flag)
@@ -372,7 +372,7 @@ class InventarioApp(tk.Tk):
                 profissional_flag = self._is_professional_gpu(gpu_model, gpu_fab)
                 gpu_entry = next((g for g in self.gpus_db if g.get('modelo') == gpu_model and g.get('fabricante') == gpu_fab), None)
                 if gpu_entry:
-                    memoria_vram = int(gpu_entry.get('memoria_vram', 0) or 0)
+                    memoria_vram = int(gpu_entry.get('memoria_vram', 0))
                 else:
                     memoria_vram = self._get_valor('GPU VRAM (GB)', int)
                 gpu = PlacaDeVideo(modelo=gpu_model, memoria_vram=memoria_vram, fabricante=gpu_fab, profissional=profissional_flag)
