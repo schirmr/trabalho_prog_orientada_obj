@@ -85,6 +85,7 @@ class InventarioApp(tk.Tk):
                 return json.load(f) # Transforma o conteudo em um objeto Python
         except (FileNotFoundError, json.JSONDecodeError) as e:
             messagebox.showerror("Erro Crítico", f"Não foi possível carregar 'gpus.json': {e}")
+            self.destroy() # Fecha o programa pois é impossível continuar sem a base de dados
             return []
     ## Cria os widgets da interface gráfica
     def _criar_widgets(self):
@@ -155,7 +156,7 @@ class InventarioApp(tk.Tk):
         widget.config(state=state)
     ## Define o valor de um campo, respeitando seu estado atual
     def _set_field_value(self, widget_name, value, is_manual_mode=False):
-        widget = self.widgets[widget_name]['widget']
+        widget = self.widgets[widget_name]['widget'] # Obtém o widget correspondente ao nome fornecido (Tkinter Entry)
         current_state = widget.cget('state') # Obtém o estado atual do widget (normal, readonly, disabled) (configure-get (ler o valor de uma configuração))
         if current_state == 'readonly' and not is_manual_mode: # Serve para conseguir deixar o estado normal para fazer modificações
             widget.config(state='normal')
@@ -390,7 +391,7 @@ class InventarioApp(tk.Tk):
         except Exception as e: 
             messagebox.showerror("Erro Inesperado", f"Ocorreu um erro: {e}")
             return None # FALHA: Retorna None
-
+    ## Adiciona um novo computador ao inventário
     def _adicionar_computador(self):
         novo_computador = self._ler_dados_do_formulario_e_criar_obj()
 
@@ -407,8 +408,8 @@ class InventarioApp(tk.Tk):
     
     ## Limpa todos os campos do formulário
     def _limpar_campos(self):
-        for data in self.widgets.values():
-            widget = data['widget']
+        for data in self.widgets.values(): # Para cada widget no formulário
+            widget = data['widget'] # Obtém o widget correspondente (Tkinter Entry ou Combobox)
             if isinstance(widget, ttk.Combobox): widget.set('')
             elif isinstance(widget, ttk.Entry):
                 is_readonly = widget.cget('state') == 'readonly'
@@ -545,7 +546,7 @@ class InventarioApp(tk.Tk):
                 json.dump(lista_dict, f, indent=4) # Salva a lista_dict em formato JSON
             messagebox.showinfo("Sucesso", "Inventário salvo com sucesso!")
         except Exception as e: messagebox.showerror("Erro ao Salvar", f"Ocorreu um erro ao salvar o arquivo: {e}") # Exibe uma mensagem de erro caso ocorra algum problema ao salvar o arquivo
-
+    ## Carrega o inventário de um arquivo JSON
     def _carregar_arquivo(self):
         filepath = filedialog.askopenfilename(
             defaultextension=".json", 
@@ -598,9 +599,9 @@ class InventarioApp(tk.Tk):
         except Exception as e:
             messagebox.showerror("Erro ao Carregar", f"Ocorreu um erro ao carregar o arquivo: {e}")
             return
-    
+    # Busca um computador pela TAG e carrega seus dados no formulário para edição
     def _buscar_e_carregar_por_tag(self):
-        tag_busca = self.search_entry.get().strip()
+        tag_busca = self.search_entry.get().strip() # Obtém a TAG digitada na caixa de busca (strip remove os espaços em branco no início e no fim)
         if not tag_busca:
             messagebox.showwarning("Entrada Inválida", "Por favor, insira uma TAG para buscar.")
             return
@@ -612,7 +613,7 @@ class InventarioApp(tk.Tk):
             self._preencher_campos_para_edicao(computador) 
         else:
             messagebox.showinfo("Não Encontrado", f"Nenhum computador encontrado com a TAG '{tag_busca}'.")
-    
+    # Salva um novo computador ou atualiza um existente com base nos dados do formulário
     def _salvar_item(self):  
         try:
             novo_computador_obj = self._ler_dados_do_formulario_e_criar_obj() 
@@ -629,7 +630,7 @@ class InventarioApp(tk.Tk):
             messagebox.showinfo("Sucesso", "Computador ADICIONADO com sucesso!")
         self._atualizar_lista()
         self._limpar_campos()
-
+    # Exclui um computador do inventário com base na TAG fornecida
     def _excluir_por_tag(self):
         tag_busca = self.search_entry.get().strip()
         if not tag_busca:
@@ -656,7 +657,7 @@ class InventarioApp(tk.Tk):
                 return comp, i  # encontrou, retorna o objeto e sua posição (índice)
         return None, None # nao encontrou
 
-
+    # Preenche os campos do formulário com os dados de um computador para edição
     def _preencher_campos_para_edicao(self, computador: Computador):
         try:
             self._limpar_campos()
@@ -667,9 +668,9 @@ class InventarioApp(tk.Tk):
             cpu = computador.processador
             self.widgets['CPU Fabricante']['widget'].set(cpu.fabricante)
             self.widgets['CPU Família']['widget'].set(cpu.familia)
-            self._update_cpu_fields()
+            self._update_cpu_fields() # Atualiza os modelos de CPU com base na família selecionada
             self.widgets['CPU Modelo']['widget'].set(cpu.modelo)
-            self._update_cpu_fields()
+            self._update_cpu_fields() # Atualiza os campos de CPU com base no modelo selecionado
             if cpu.ultima_geracao:
                 self.cpu_ultima_geracao_var.set(True)
                 self._set_field_value('CPU Núcleos Performance', cpu.perf_cores)
@@ -682,7 +683,7 @@ class InventarioApp(tk.Tk):
 
             ram = computador.memoria_ram
             self.widgets['Módulos RAM']['widget'].set(ram.num_modulos)
-            tamanho_por_mod = ram.capacidade_gb // ram.num_modulos
+            tamanho_por_mod = ram.capacidade_gb // ram.num_modulos # Calcula o tamanho por módulo da RAM (// em Python é divisão inteira)
             self._set_field_value('Tamanho por Módulo (GB)', tamanho_por_mod)
             self._set_field_value('RAM (MHz)', ram.velocidade_mhz)
 
@@ -707,7 +708,7 @@ class InventarioApp(tk.Tk):
                 self._update_gpu_models()
                 self.widgets['GPU Modelo']['widget'].set(gpu.modelo)
                 self._update_gpu_vram()
-            self.item_selecionado_index = self.lista_computadores.index(computador)
+            self.item_selecionado_index = self.lista_computadores.index(computador) # Armazena o índice do computador sendo editado
             self._update_form_visibility()
             
         except Exception as e:
